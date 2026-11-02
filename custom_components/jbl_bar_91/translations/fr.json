@@ -1,0 +1,142 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "JBL Bar 9.1",
+        "description": "Adresse de la télécommande web de la barre (kisinga/jbl-bar-9.1). Home Assistant doit être dans le sous-réseau autorisé de la télécommande.",
+        "data": {
+          "host": "Hôte"
+        },
+        "data_description": {
+          "host": "Adresse IP de la barre, avec le port si besoin (8080 par défaut), ex. 192.168.1.50:8080"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de joindre la télécommande web à cette adresse.",
+      "forbidden": "La télécommande refuse Home Assistant. Recompile-la avec un allowed_cidr qui inclut l'adresse IP de Home Assistant.",
+      "not_remote": "Cette adresse ne répond pas comme la télécommande web de la JBL Bar 9.1."
+    },
+    "abort": {
+      "already_configured": "Cette barre est déjà configurée."
+    }
+  },
+  "entity": {
+    "select": {
+      "bass": {
+        "name": "Niveau de basse"
+      },
+      "center": {
+        "name": "Niveau centre",
+        "state": {
+          "0": "0 (+0 dB)",
+          "1": "1 (+2,4 dB)",
+          "2": "2 (+4,8 dB)",
+          "3": "3 (+7,2 dB)",
+          "4": "4 (+9,6 dB)",
+          "5": "5 (+12 dB)"
+        }
+      },
+      "atmos": {
+        "name": "Hauteur Atmos",
+        "state": {
+          "low": "Bas",
+          "mid": "Moyen",
+          "high": "Haut"
+        }
+      },
+      "rear": {
+        "name": "Enceintes arrière",
+        "state": {
+          "low": "Bas",
+          "mid": "Moyen",
+          "high": "Haut",
+          "muted": "Coupées"
+        }
+      },
+      "eq_preset": {
+        "name": "Préréglage EQ avant",
+        "state": {
+          "original": "Origine",
+          "less_bass": "Moins de basses",
+          "clear_dialogue": "Dialogues clairs",
+          "softer_treble": "Aigus adoucis",
+          "warm": "Chaud",
+          "bright": "Brillant",
+          "vocal_focus": "Voix en avant"
+        }
+      }
+    },
+    "number": {
+      "eq_band": {
+        "name": "EQ avant {band}"
+      }
+    },
+    "switch": {
+      "night": {
+        "name": "Mode nuit"
+      }
+    },
+    "button": {
+      "standard_mode": {
+        "name": "Mode standard"
+      },
+      "bluetooth_pairing": {
+        "name": "Appairage Bluetooth"
+      }
+    },
+    "sensor": {
+      "sound_mode": {
+        "name": "Mode son",
+        "state": {
+          "standard": "Standard",
+          "smart": "Smart",
+          "unknown": "Inconnu"
+        }
+      },
+      "bluetooth_device": {
+        "name": "Appareil Bluetooth"
+      },
+      "bluetooth_audio": {
+        "name": "Audio Bluetooth"
+      },
+      "cpu": {
+        "name": "CPU"
+      },
+      "memory": {
+        "name": "Mémoire utilisée"
+      },
+      "temperature": {
+        "name": "Température"
+      },
+      "wifi_signal": {
+        "name": "Signal Wi-Fi"
+      },
+      "uptime": {
+        "name": "Temps de fonctionnement"
+      }
+    },
+    "binary_sensor": {
+      "rear_docked": {
+        "name": "Enceintes arrière posées"
+      },
+      "bluetooth_connected": {
+        "name": "Bluetooth connecté"
+      }
+    }
+  },
+  "exceptions": {
+    "refused": {
+      "message": "La barre a refusé la commande : {error}"
+    },
+    "unreachable": {
+      "message": "La télécommande web de la barre est injoignable : {error}"
+    },
+    "unavailable": {
+      "message": "Ce réglage n'est pas disponible pour le moment."
+    },
+    "not_reached": {
+      "message": "La barre n'a pas confirmé le niveau demandé."
+    }
+  }
+}

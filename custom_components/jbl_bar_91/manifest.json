@@ -1,0 +1,13 @@
+{
+  "domain": "jbl_bar_91",
+  "name": "JBL Bar 9.1 (web remote)",
+  "codeowners": ["@naonak"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/naonak/jbl-bar-9.1-ha",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/naonak/jbl-bar-9.1-ha/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

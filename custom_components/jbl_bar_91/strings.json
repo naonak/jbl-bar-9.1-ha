@@ -1,0 +1,142 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "JBL Bar 9.1",
+        "description": "Address of the soundbar's browser remote (kisinga/jbl-bar-9.1). Home Assistant must be inside the remote's allowed subnet.",
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "IP address of the bar, optionally with the port (default 8080), e.g. 192.168.1.50:8080"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot reach the browser remote at this address.",
+      "forbidden": "The remote refused Home Assistant. Rebuild the remote with an allowed_cidr that includes Home Assistant's IP address.",
+      "not_remote": "This address does not answer like the JBL Bar 9.1 browser remote."
+    },
+    "abort": {
+      "already_configured": "This soundbar is already configured."
+    }
+  },
+  "entity": {
+    "select": {
+      "bass": {
+        "name": "Bass level"
+      },
+      "center": {
+        "name": "Center level",
+        "state": {
+          "0": "0 (+0 dB)",
+          "1": "1 (+2.4 dB)",
+          "2": "2 (+4.8 dB)",
+          "3": "3 (+7.2 dB)",
+          "4": "4 (+9.6 dB)",
+          "5": "5 (+12 dB)"
+        }
+      },
+      "atmos": {
+        "name": "Atmos height",
+        "state": {
+          "low": "Low",
+          "mid": "Mid",
+          "high": "High"
+        }
+      },
+      "rear": {
+        "name": "Rear speakers",
+        "state": {
+          "low": "Low",
+          "mid": "Mid",
+          "high": "High",
+          "muted": "Muted"
+        }
+      },
+      "eq_preset": {
+        "name": "Front EQ preset",
+        "state": {
+          "original": "Original",
+          "less_bass": "Less bass",
+          "clear_dialogue": "Clear dialogue",
+          "softer_treble": "Softer treble",
+          "warm": "Warm",
+          "bright": "Bright",
+          "vocal_focus": "Vocal focus"
+        }
+      }
+    },
+    "number": {
+      "eq_band": {
+        "name": "Front EQ {band}"
+      }
+    },
+    "switch": {
+      "night": {
+        "name": "Night mode"
+      }
+    },
+    "button": {
+      "standard_mode": {
+        "name": "Standard mode"
+      },
+      "bluetooth_pairing": {
+        "name": "Bluetooth pairing"
+      }
+    },
+    "sensor": {
+      "sound_mode": {
+        "name": "Sound mode",
+        "state": {
+          "standard": "Standard",
+          "smart": "Smart",
+          "unknown": "Unknown"
+        }
+      },
+      "bluetooth_device": {
+        "name": "Bluetooth device"
+      },
+      "bluetooth_audio": {
+        "name": "Bluetooth audio"
+      },
+      "cpu": {
+        "name": "CPU"
+      },
+      "memory": {
+        "name": "Memory used"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "wifi_signal": {
+        "name": "Wi-Fi signal"
+      },
+      "uptime": {
+        "name": "Uptime"
+      }
+    },
+    "binary_sensor": {
+      "rear_docked": {
+        "name": "Rear speakers docked"
+      },
+      "bluetooth_connected": {
+        "name": "Bluetooth connected"
+      }
+    }
+  },
+  "exceptions": {
+    "refused": {
+      "message": "The soundbar refused the control: {error}"
+    },
+    "unreachable": {
+      "message": "The soundbar's browser remote is unreachable: {error}"
+    },
+    "unavailable": {
+      "message": "This setting is not available right now."
+    },
+    "not_reached": {
+      "message": "The requested level was not confirmed by the soundbar."
+    }
+  }
+}

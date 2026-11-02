@@ -1,0 +1,145 @@
+"""Media player: power, volume, mute, source, playback and now playing."""
+from __future__ import annotations
+
+from typing import Any
+
+from homeassistant.components.media_player import (
+    MediaPlayerDeviceClass,
+    MediaPlayerEntity,
+    MediaPlayerEntityFeature as F,
+    MediaPlayerState,
+)
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+from .const import SOURCES, VOLUME_MAX
+from .coordinator import JblBarConfigEntry
+from .entity import JblBarEntity
+
+PLAYBACK = {
+    F.PLAY: "media_play",
+    F.PAUSE: "media_pause",
+    F.STOP: "media_stop",
+    F.NEXT_TRACK: "media_next",
+    F.PREVIOUS_TRACK: "media_previous",
+}
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
+    add([JblBarMediaPlayer(entry.runtime_data, "media_player")])
+
+
+class JblBarMediaPlayer(JblBarEntity, MediaPlayerEntity):
+    _attr_name = None
+    _attr_device_class = MediaPlayerDeviceClass.SPEAKER
+    _attr_source_list = [name for name, _ in SOURCES.values()]
+
+    @property
+    def supported_features(self) -> F:
+        features = F.TURN_ON | F.TURN_OFF | F.VOLUME_SET | F.VOLUME_STEP | F.VOLUME_MUTE | F.SELECT_SOURCE
+        controls = self.state_doc.get("media_controls") or []
+        for feature, action in PLAYBACK.items():
+            if action in controls:
+                features |= feature
+        return features
+
+    @property
+    def _cast(self) -> dict[str, Any]:
+        return ((self.state_doc.get("streaming") or {}).get("cast")) or {}
+
+    @property
+    def state(self) -> MediaPlayerState | None:
+        power = self.state_doc.get("power")
+        if power == "Standby":
+            return MediaPlayerState.OFF
+        if power != "On":
+            return None
+        player = self._cast.get("player_state")
+        if player == "PLAYING":
+            return MediaPlayerState.PLAYING
+        if player == "PAUSED":
+            return MediaPlayerState.PAUSED
+        if (self.state_doc.get("streaming") or {}).get("active"):
+            return MediaPlayerState.PLAYING
+        return MediaPlayerState.ON
+
+    @property
+    def volume_level(self) -> float | None:
+        volume = self.state_doc.get("volume")
+        return None if volume is None else volume / VOLUME_MAX
+
+    @property
+    def is_volume_muted(self) -> bool | None:
+        return self.state_doc.get("muted")
+
+    @property
+    def source(self) -> str | None:
+        found = SOURCES.get(self.state_doc.get("input", ""))
+        return found[0] if found else self.state_doc.get("input")
+
+    @property
+    def app_name(self) -> str | None:
+        return (self.state_doc.get("streaming") or {}).get("service")
+
+    @property
+    def media_title(self) -> str | None:
+        return self._cast.get("title")
+
+    @property
+    def media_artist(self) -> str | None:
+        return self._cast.get("artist")
+
+    @property
+    def media_album_name(self) -> str | None:
+        return self._cast.get("album")
+
+    async def async_turn_on(self) -> None:
+        if self.state_doc.get("power") != "On":
+            await self.coordinator.async_action("power")
+
+    async def async_turn_off(self) -> None:
+        if self.state_doc.get("power") == "On":
+            await self.coordinator.async_action("power")
+
+    async def async_volume_up(self) -> None:
+        await self.coordinator.async_action("volume_up")
+
+    async def async_volume_down(self) -> None:
+        await self.coordinator.async_action("volume_down")
+
+    async def async_set_volume_level(self, volume: float) -> None:
+        target = max(0, min(VOLUME_MAX, round(volume * VOLUME_MAX)))
+        await self.coordinator.async_step_to(
+            lambda current: "volume_up" if current < target else "volume_down",
+            lambda doc: doc.get("volume"),
+            target,
+            VOLUME_MAX,
+        )
+
+    async def async_mute_volume(self, mute: bool) -> None:
+        if bool(self.state_doc.get("muted")) != mute:
+            await self.coordinator.async_action("mute")
+
+    async def async_select_source(self, source: str) -> None:
+        for name, action in SOURCES.values():
+            if name == source:
+                await self.coordinator.async_action(action)
+                return
+
+    async def _playback(self, feature: F) -> None:
+        await self.coordinator.async_action(PLAYBACK[feature])
+
+    async def async_media_play(self) -> None:
+        await self._playback(F.PLAY)
+
+    async def async_media_pause(self) -> None:
+        await self._playback(F.PAUSE)
+
+    async def async_media_stop(self) -> None:
+        await self._playback(F.STOP)
+
+    async def async_media_next_track(self) -> None:
+        await self._playback(F.NEXT_TRACK)
+
+    async def async_media_previous_track(self) -> None:
+        await self._playback(F.PREVIOUS_TRACK)
