@@ -30,7 +30,10 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 | Front EQ preset | The remote's presets: Original, Less bass, Clear dialogue, Softer treble, Warm, Bright, Vocal focus |
 | Front EQ 125 Hz … 8 kHz | −6 to 0 dB per band; each change applies the full curve |
 | Night mode | Switch |
-| Standard mode, Bluetooth pairing | Buttons |
+| Smart mode | Switch: on = Smart, off = Standard (the bar returns to Smart at power-on). Needs a remote with the advanced controls |
+| Audio sync | Lip-sync delay, 0–250 ms in 10 ms steps, TV and HDMI inputs only (each change takes about ten seconds per 80 ms). Needs a remote with the advanced controls |
+| Bluetooth pairing | Button |
+| Standard mode | Button, only with older remotes (replaced by the Smart mode switch) |
 | Sound mode, Bluetooth device, Bluetooth audio | Sensors |
 | Rear speakers docked, Bluetooth connected | Binary sensors |
 | CPU, Memory used, Temperature, Wi-Fi signal, Uptime | Diagnostics (the last two disabled by default) |

@@ -16,7 +16,7 @@ from typing import Any
 import aiohttp
 
 STATE_TIMEOUT = aiohttp.ClientTimeout(total=10)
-ACTION_TIMEOUT = aiohttp.ClientTimeout(total=25)
+ACTION_TIMEOUT = aiohttp.ClientTimeout(total=40)
 # The remote sends a keepalive comment every 15 s.
 EVENTS_TIMEOUT = aiohttp.ClientTimeout(total=None, sock_connect=10, sock_read=45)
 
@@ -69,10 +69,12 @@ class JblBarClient:
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:
             raise JblBarError(str(err) or type(err).__name__) from err
 
-    async def action(self, action: str, gains_db: list[float] | None = None) -> dict[str, Any]:
+    async def action(self, action: str, gains_db: list[float] | None = None, value: int | None = None) -> dict[str, Any]:
         payload: dict[str, Any] = {"action": action}
         if gains_db is not None:
             payload["gains_db"] = gains_db
+        if value is not None:
+            payload["value"] = value
         async with self._lock:
             for attempt in (1, 2):
                 if not self._csrf:

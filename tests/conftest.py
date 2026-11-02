@@ -38,6 +38,9 @@ class FakeRemote:
         self.log: list[tuple] = []
         self.forbid_ha = False
         self.eq_helper = True
+        self.advanced = True
+        self.mode = "Standard"
+        self.av_sync = 0
         self.streams = 0
         self.changed = asyncio.Condition()
         self.port = 0
@@ -53,10 +56,11 @@ class FakeRemote:
     def state(self) -> dict[str, Any]:
         s = self.s
         return {
-            "available": True, "power": s["power"], "mode": "Standard", "volume": s["volume"], "muted": s["muted"],
-            "input": s["input"], "csrf": s["csrf"], "uptime": 1234, "media_controls": s["controls"],
+            "available": True, "power": s["power"], "mode": self.mode, "volume": s["volume"], "muted": s["muted"],
+            "input": s["input"], "source_state": {"TV / ARC": 0, "Bluetooth": 2, "HDMI": 3}.get(s["input"], 6), "csrf": s["csrf"], "uptime": 1234, "media_controls": s["controls"],
             "sound": {"night": s["night"], "bass": s["bass"], "atmos": s["atmos"], "rear": s["rear"],
-                      "rear_docked": False, "center": s["center"]},
+                      "rear_docked": False, "center": s["center"],
+                      **({"av_sync_ms": self.av_sync} if self.advanced else {})},
             "bluetooth": {"connected": True, "peer_name": "Pixel", "audio": "Streaming", "selected": False},
             "streaming": {"service": "Chromecast", "status": "Playing", "active": True,
                           "cast": {"title": "Song", "artist": "Band", "album": "LP", "player_state": "PLAYING"}},
@@ -97,6 +101,19 @@ class FakeRemote:
         req = await request.json()
         a, s = req["action"], self.s
         self.log.append(("ok", a, req.get("gains_db")))
+        if a == "av_sync_set":
+            v = req.get("value")
+            if s["input"] not in ("TV / ARC", "HDMI"):
+                return web.json_response({"error": "select the TV or HDMI input to adjust audio sync", "state": self.state()}, status=409)
+            if not isinstance(v, int) or v % 10 or not 0 <= v <= 250 or abs(v - self.av_sync) > 80:
+                return web.json_response({"error": "audio sync value refused", "state": self.state()}, status=409)
+            self.av_sync = v
+            await self.notify()
+            return web.json_response(self.state())
+        if a == "smart":
+            self.mode = "Smart"
+        elif a == "standard":
+            self.mode = "Standard"
         if a == "media_next":
             return web.json_response({"error": "this source does not report support for that playback control", "state": self.state()}, status=409)
         if a == "volume_up": s["volume"] += 1
@@ -110,6 +127,7 @@ class FakeRemote:
         elif a == "center_next": s["center"] = (s["center"] + 1) % 6
         elif a == "input_hdmi": s["input"] = "HDMI"
         elif a == "input_tv": s["input"] = "TV / ARC"
+        elif a == "input_bluetooth": s["input"] = "Bluetooth"
         elif a == "eq_apply": s["eq"], s["eq_on"] = req["gains_db"], True
         elif a == "eq_reset": s["eq"], s["eq_on"] = [0] * 5, False
         await self.notify()

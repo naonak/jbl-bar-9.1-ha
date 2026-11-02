@@ -70,11 +70,17 @@
     "number": {
       "eq_band": {
         "name": "Front EQ {band}"
+      },
+      "audio_sync": {
+        "name": "Audio sync"
       }
     },
     "switch": {
       "night": {
         "name": "Night mode"
+      },
+      "smart_mode": {
+        "name": "Smart mode"
       }
     },
     "button": {

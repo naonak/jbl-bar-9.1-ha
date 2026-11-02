@@ -24,6 +24,14 @@ def eq_installed(doc: dict[str, Any] | None) -> bool:
     return isinstance(eq, dict) and eq.get("error") != EQ_NOT_INSTALLED
 
 
+def advanced_controls(doc: dict[str, Any] | None) -> bool:
+    """True when the remote has the advanced controls (Smart Mode, audio sync).
+
+    Both shipped together; the audio sync value is the only visible marker.
+    """
+    return "av_sync_ms" in ((doc or {}).get("sound") or {})
+
+
 class JblBarEntity(CoordinatorEntity[JblBarCoordinator]):
     """Entity backed by the remote's state document."""
 

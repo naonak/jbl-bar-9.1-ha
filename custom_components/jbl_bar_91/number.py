@@ -6,15 +6,19 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import EQ_BANDS
+from .const import AV_SYNC_CHUNK, AV_SYNC_MAX, AV_SYNC_SOURCES, AV_SYNC_STEP, EQ_BANDS
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity, eq_installed
+from .entity import JblBarEntity, advanced_controls, eq_installed
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
     coordinator = entry.runtime_data
+    entities: list[NumberEntity] = []
     if eq_installed(coordinator.data):
-        add(JblBarEqBand(coordinator, index) for index in range(len(EQ_BANDS)))
+        entities.extend(JblBarEqBand(coordinator, index) for index in range(len(EQ_BANDS)))
+    if advanced_controls(coordinator.data):
+        entities.append(JblBarAudioSync(coordinator, "audio_sync"))
+    add(entities)
 
 
 def current_curve(doc: dict) -> list[float]:
@@ -55,3 +59,32 @@ class JblBarEqBand(JblBarEntity, NumberEntity):
             await self.coordinator.async_action("eq_apply", curve)
         else:
             await self.coordinator.async_action("eq_reset")
+
+
+class JblBarAudioSync(JblBarEntity, NumberEntity):
+    """Lip-sync delay, stepped by the remote in chunks of at most 80 ms."""
+
+    _attr_native_min_value = 0
+    _attr_native_max_value = AV_SYNC_MAX
+    _attr_native_step = AV_SYNC_STEP
+    _attr_native_unit_of_measurement = "ms"
+    _attr_mode = NumberMode.BOX
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:timer-sync-outline"
+
+    @property
+    def native_value(self) -> int | None:
+        return self.sound.get("av_sync_ms")
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.awake and self.state_doc.get("source_state") in AV_SYNC_SOURCES
+
+    async def async_set_native_value(self, value: float) -> None:
+        target = max(0, min(AV_SYNC_MAX, int(round(value / AV_SYNC_STEP)) * AV_SYNC_STEP))
+        for _ in range(AV_SYNC_MAX // AV_SYNC_CHUNK + 2):
+            current = self.sound.get("av_sync_ms")
+            if current is None or current == target:
+                return
+            step = max(-AV_SYNC_CHUNK, min(AV_SYNC_CHUNK, target - current))
+            await self.coordinator.async_action("av_sync_set", value=current + step)

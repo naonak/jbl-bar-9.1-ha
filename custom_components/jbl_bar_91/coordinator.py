@@ -73,10 +73,10 @@ class JblBarCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 delay = min(delay * 2, RECONNECT_MAX)
             await asyncio.sleep(delay)
 
-    async def async_action(self, action: str, gains_db: list[float] | None = None) -> None:
+    async def async_action(self, action: str, gains_db: list[float] | None = None, value: int | None = None) -> None:
         """Send one control and publish the confirmed state."""
         try:
-            state = await self.client.action(action, gains_db)
+            state = await self.client.action(action, gains_db, value)
         except JblBarRefused as err:
             if err.state:
                 self.async_set_updated_data(err.state)

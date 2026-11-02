@@ -9,6 +9,7 @@ from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.jbl_bar_91.const import DOMAIN
@@ -171,6 +172,57 @@ async def test_push_updates_and_standby_closes_stream(hass: HomeAssistant, remot
     await remote.notify()
     assert await until(lambda: hass.states.get(MP).state == "off")
     assert await until(lambda: remote.streams == 0)
+
+
+async def test_smart_mode_switch(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    sw = "switch.jbl_bar_9_1_smart_mode"
+    assert hass.states.get(sw).state == "off"
+    remote.log.clear()
+    await call(hass, "switch", "turn_on", sw)
+    await call(hass, "switch", "turn_on", sw)
+    assert remote.actions() == ["smart"] and hass.states.get(sw).state == "on"
+    await call(hass, "switch", "turn_off", sw)
+    assert remote.actions() == ["smart", "standard"] and remote.mode == "Standard"
+
+
+async def test_audio_sync_in_chunks(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    num = "number.jbl_bar_9_1_audio_sync"
+    assert hass.states.get(num).state == "0"
+    remote.log.clear()
+    await call(hass, "number", "set_value", num, value=120)
+    assert remote.av_sync == 120 and hass.states.get(num).state == "120"
+    assert [e[1] for e in remote.log if e[0] == "ok"] == ["av_sync_set", "av_sync_set"]
+    await call(hass, "number", "set_value", num, value=100)
+    assert remote.av_sync == 100
+
+
+async def test_audio_sync_unavailable_on_bluetooth(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    await call(hass, "media_player", "select_source", MP, source="Bluetooth")
+    assert hass.states.get("number.jbl_bar_9_1_audio_sync").state == "unavailable"
+
+
+async def test_no_advanced_entities_on_older_remote(hass: HomeAssistant, remote) -> None:
+    remote.advanced = False
+    await setup(hass, remote)
+    assert hass.states.get("switch.jbl_bar_9_1_smart_mode") is None
+    assert hass.states.get("number.jbl_bar_9_1_audio_sync") is None
+    assert hass.states.get("button.jbl_bar_9_1_standard_mode") is not None
+
+
+async def test_standard_button_replaced_by_smart_switch(hass: HomeAssistant, remote) -> None:
+    remote.advanced = False
+    entry = await setup(hass, remote)
+    assert hass.states.get("button.jbl_bar_9_1_standard_mode") is not None
+    # The bar gets the advanced remote: after a reload the old button is gone.
+    remote.advanced = True
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert hass.states.get("button.jbl_bar_9_1_standard_mode") is None
+    assert er.async_get(hass).async_get_entity_id("button", DOMAIN, f"{remote.host}_standard_mode") is None
+    assert hass.states.get("switch.jbl_bar_9_1_smart_mode") is not None
 
 
 async def test_unload(hass: HomeAssistant, remote) -> None:

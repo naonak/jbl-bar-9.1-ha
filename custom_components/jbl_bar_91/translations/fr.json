@@ -70,11 +70,17 @@
     "number": {
       "eq_band": {
         "name": "EQ avant {band}"
+      },
+      "audio_sync": {
+        "name": "Synchro audio"
       }
     },
     "switch": {
       "night": {
         "name": "Mode nuit"
+      },
+      "smart_mode": {
+        "name": "Mode Smart"
       }
     },
     "button": {
