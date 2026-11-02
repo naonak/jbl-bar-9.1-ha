@@ -41,6 +41,8 @@ class FakeRemote:
         self.advanced = True
         self.mode = "Standard"
         self.av_sync = 0
+        self.setup: dict[str, Any] | None = {"sub_pairing": False}
+        self.rear_docked = False
         self.streams = 0
         self.changed = asyncio.Condition()
         self.port = 0
@@ -59,8 +61,10 @@ class FakeRemote:
             "available": True, "power": s["power"], "mode": self.mode, "volume": s["volume"], "muted": s["muted"],
             "input": s["input"], "source_state": {"TV / ARC": 0, "Bluetooth": 2, "HDMI": 3}.get(s["input"], 6), "csrf": s["csrf"], "uptime": 1234, "media_controls": s["controls"],
             "sound": {"night": s["night"], "bass": s["bass"], "atmos": s["atmos"], "rear": s["rear"],
-                      "rear_docked": False, "center": s["center"],
-                      **({"av_sync_ms": self.av_sync} if self.advanced else {})},
+                      "rear_docked": self.rear_docked, "center": s["center"],
+                      **({"av_sync_ms": self.av_sync} if self.advanced else {}),
+                      **({"audio_format": "DOLBY SURROUND DD+"} if self.setup is not None and s["power"] == "On" else {})},
+            **({"setup": self.setup} if self.setup is not None else {}),
             "bluetooth": {"connected": True, "peer_name": "Pixel", "audio": "Streaming", "selected": False},
             "streaming": {"service": "Chromecast", "status": "Playing", "active": True,
                           "cast": {"title": "Song", "artist": "Band", "album": "LP", "player_state": "PLAYING"}},
@@ -108,6 +112,14 @@ class FakeRemote:
             if not isinstance(v, int) or v % 10 or not 0 <= v <= 250 or abs(v - self.av_sync) > 80:
                 return web.json_response({"error": "audio sync value refused", "state": self.state()}, status=409)
             self.av_sync = v
+            await self.notify()
+            return web.json_response(self.state())
+        if a in ("calibrate", "sub_pair"):
+            if "value" in req or self.setup is None:
+                return web.json_response({"error": "unknown control", "state": self.state()}, status=409)
+            if a == "calibrate" and self.rear_docked:
+                return web.json_response({"error": "undock both rear speakers first", "state": self.state()}, status=409)
+            self.setup = {**self.setup, **({"calibration": "Step 1 starting"} if a == "calibrate" else {"sub_pairing": True})}
             await self.notify()
             return web.json_response(self.state())
         if a == "smart":

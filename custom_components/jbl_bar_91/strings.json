@@ -89,6 +89,12 @@
       },
       "bluetooth_pairing": {
         "name": "Bluetooth pairing"
+      },
+      "calibrate": {
+        "name": "Calibrate surround"
+      },
+      "sub_pair": {
+        "name": "Pair subwoofer"
       }
     },
     "sensor": {
@@ -120,6 +126,15 @@
       },
       "uptime": {
         "name": "Uptime"
+      },
+      "audio_format": {
+        "name": "Audio format"
+      },
+      "calibration": {
+        "name": "Calibration"
+      },
+      "subwoofer": {
+        "name": "Subwoofer"
       }
     },
     "binary_sensor": {

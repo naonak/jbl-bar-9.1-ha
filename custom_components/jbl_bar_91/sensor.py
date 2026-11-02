@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity
+from .entity import JblBarEntity, setup_controls
 
 
 def _memory(doc: dict[str, Any]) -> float | None:
@@ -45,8 +45,21 @@ SENSORS = [
 ]
 
 
+SETUP_SENSORS = [
+    # Text the bar last showed for the incoming stream, e.g. "DOLBY SURROUND DD+".
+    Description(key="audio_format", icon="mdi:surround-sound",
+                value=lambda d: (d.get("sound") or {}).get("audio_format") if d.get("power") == "On" else None),
+    Description(key="calibration", icon="mdi:tune-vertical", entity_category=DIAG,
+                value=lambda d: (d.get("setup") or {}).get("calibration") or "Idle"),
+    Description(key="subwoofer", icon="mdi:speaker-wireless", entity_category=DIAG,
+                value=lambda d: "Pairing" if (d.get("setup") or {}).get("sub_pairing")
+                else (d.get("setup") or {}).get("subwoofer")),
+]
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
-    add(JblBarSensor(entry.runtime_data, description) for description in SENSORS)
+    descriptions = SENSORS + (SETUP_SENSORS if setup_controls(entry.runtime_data.data) else [])
+    add(JblBarSensor(entry.runtime_data, description) for description in descriptions)
 
 
 class JblBarSensor(JblBarEntity, SensorEntity):

@@ -89,6 +89,12 @@
       },
       "bluetooth_pairing": {
         "name": "Appairage Bluetooth"
+      },
+      "calibrate": {
+        "name": "Calibrer le surround"
+      },
+      "sub_pair": {
+        "name": "Appairer le caisson"
       }
     },
     "sensor": {
@@ -120,6 +126,15 @@
       },
       "uptime": {
         "name": "Temps de fonctionnement"
+      },
+      "audio_format": {
+        "name": "Format audio"
+      },
+      "calibration": {
+        "name": "Calibration"
+      },
+      "subwoofer": {
+        "name": "Caisson"
       }
     },
     "binary_sensor": {

@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
-from homeassistant.const import Platform
+from homeassistant.const import EntityCategory, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity, advanced_controls
+from .entity import JblBarEntity, advanced_controls, setup_controls
 
 BUTTONS = {"standard_mode": ("standard", "mdi:auto-fix"), "bluetooth_pairing": ("bluetooth_pair", "mdi:bluetooth-settings")}
 
@@ -24,7 +24,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: 
         registry = er.async_get(hass)
         if old := registry.async_get_entity_id(Platform.BUTTON, DOMAIN, f"{entry.unique_id}_standard_mode"):
             registry.async_remove(old)
-    add(JblBarButton(coordinator, key, action, icon) for key, (action, icon) in buttons.items())
+    entities: list[JblBarButton] = [JblBarButton(coordinator, key, action, icon) for key, (action, icon) in buttons.items()]
+    if setup_controls(coordinator.data):
+        entities += [JblBarCalibrate(coordinator, "calibrate", "calibrate", "mdi:surround-sound"),
+                     JblBarSubPair(coordinator, "sub_pair", "sub_pair", "mdi:speaker-wireless")]
+    add(entities)
 
 
 class JblBarButton(JblBarEntity, ButtonEntity):
@@ -35,3 +39,29 @@ class JblBarButton(JblBarEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         await self.coordinator.async_action(self._action)
+
+
+def _measuring(setup: dict) -> bool:
+    phase = setup.get("calibration") or ""
+    return "starting" in phase.lower() or phase == "Measuring"
+
+
+class JblBarCalibrate(JblBarButton):
+    """Start the next calibration step; the bar measures for about 35 s."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+
+    @property
+    def available(self) -> bool:
+        return (super().available and self.awake and self.sound.get("rear_docked") is False
+                and not _measuring(self.setup) and not self.setup.get("sub_pairing"))
+
+
+class JblBarSubPair(JblBarButton):
+    """Open subwoofer pairing; the subwoofer's own button finishes it."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.awake and not _measuring(self.setup) and not self.setup.get("sub_pairing")

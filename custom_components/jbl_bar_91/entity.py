@@ -32,6 +32,11 @@ def advanced_controls(doc: dict[str, Any] | None) -> bool:
     return "av_sync_ms" in ((doc or {}).get("sound") or {})
 
 
+def setup_controls(doc: dict[str, Any] | None) -> bool:
+    """True when the remote reads the bar's display (calibration, subwoofer pairing, audio format)."""
+    return isinstance((doc or {}).get("setup"), dict)
+
+
 class JblBarEntity(CoordinatorEntity[JblBarCoordinator]):
     """Entity backed by the remote's state document."""
 
@@ -54,6 +59,10 @@ class JblBarEntity(CoordinatorEntity[JblBarCoordinator]):
     @property
     def state_doc(self) -> dict[str, Any]:
         return self.coordinator.data or {}
+
+    @property
+    def setup(self) -> dict[str, Any]:
+        return self.state_doc.get("setup") or {}
 
     @property
     def sound(self) -> dict[str, Any]:

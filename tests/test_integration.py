@@ -225,6 +225,41 @@ async def test_standard_button_replaced_by_smart_switch(hass: HomeAssistant, rem
     assert hass.states.get("switch.jbl_bar_9_1_smart_mode") is not None
 
 
+async def test_setup_controls(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    calibrate, sub = "button.jbl_bar_9_1_calibrate_surround", "button.jbl_bar_9_1_pair_subwoofer"
+    assert hass.states.get("sensor.jbl_bar_9_1_audio_format").state == "DOLBY SURROUND DD+"
+    assert hass.states.get("sensor.jbl_bar_9_1_calibration").state == "Idle"
+    assert hass.states.get(calibrate).state != "unavailable"
+    remote.log.clear()
+    await call(hass, "button", "press", calibrate)
+    assert await until(lambda: hass.states.get("sensor.jbl_bar_9_1_calibration").state == "Step 1 starting")
+    assert remote.actions() == ["calibrate"]
+    # The bar is measuring: both setup buttons wait.
+    assert hass.states.get(calibrate).state == "unavailable" and hass.states.get(sub).state == "unavailable"
+    remote.setup = {"sub_pairing": False, "calibration": "Step 1 done"}
+    await remote.notify()
+    assert await until(lambda: hass.states.get(calibrate).state != "unavailable")
+    await call(hass, "button", "press", sub)
+    assert await until(lambda: hass.states.get("sensor.jbl_bar_9_1_subwoofer").state == "Pairing")
+    assert remote.actions() == ["calibrate", "sub_pair"] and hass.states.get(sub).state == "unavailable"
+
+
+async def test_calibrate_needs_undocked_rears(hass: HomeAssistant, remote) -> None:
+    remote.rear_docked = True
+    await setup(hass, remote)
+    assert hass.states.get("button.jbl_bar_9_1_calibrate_surround").state == "unavailable"
+    assert hass.states.get("button.jbl_bar_9_1_pair_subwoofer").state != "unavailable"
+
+
+async def test_no_setup_entities_on_older_remote(hass: HomeAssistant, remote) -> None:
+    remote.setup = None
+    await setup(hass, remote)
+    for entity_id in ("button.jbl_bar_9_1_calibrate_surround", "button.jbl_bar_9_1_pair_subwoofer",
+                      "sensor.jbl_bar_9_1_audio_format", "sensor.jbl_bar_9_1_calibration"):
+        assert hass.states.get(entity_id) is None
+
+
 async def test_unload(hass: HomeAssistant, remote) -> None:
     entry = await setup(hass, remote)
     assert await hass.config_entries.async_unload(entry.entry_id)

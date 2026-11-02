@@ -33,6 +33,10 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 | Smart mode | Switch: on = Smart, off = Standard (the bar returns to Smart at power-on). Needs a remote with the advanced controls |
 | Audio sync | Lip-sync delay, 0–250 ms in 10 ms steps, TV and HDMI inputs only (each change takes about ten seconds per 80 ms). Needs a remote with the advanced controls |
 | Bluetooth pairing | Button |
+| Calibrate surround | Button: starts the next step of the wireless surround calibration (both rear speakers undocked; step 1 near your listening position, step 2 at their final places; about 35 s each). Needs a remote with the setup controls |
+| Pair subwoofer | Button: opens subwoofer pairing on the bar for up to three minutes; then hold the button on the back of the subwoofer until it flashes white quickly. Needs a remote with the setup controls |
+| Audio format | Sensor: what the bar last showed for the incoming stream, e.g. `DOLBY SURROUND DD+` (while on). Needs a remote with the setup controls |
+| Calibration, Subwoofer | Diagnostic sensors: calibration progress (Idle, Measuring, Step 1 done…) and subwoofer pairing/connection messages |
 | Standard mode | Button, only with older remotes (replaced by the Smart mode switch) |
 | Sound mode, Bluetooth device, Bluetooth audio | Sensors |
 | Rear speakers docked, Bluetooth connected | Binary sensors |
