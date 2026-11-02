@@ -10,6 +10,20 @@ from .const import DOMAIN
 from .coordinator import JblBarCoordinator
 
 
+EQ_NOT_INSTALLED = "EQ support is not installed"
+
+
+def eq_installed(doc: dict[str, Any] | None) -> bool:
+    """True when the remote was built with the Front EQ helper.
+
+    The remote only reports EQ as available while the bar is on, in Standard
+    mode, with a supported audio route, so entities are created whenever the
+    helper exists and are unavailable the rest of the time.
+    """
+    eq = (doc or {}).get("eq")
+    return isinstance(eq, dict) and eq.get("error") != EQ_NOT_INSTALLED
+
+
 class JblBarEntity(CoordinatorEntity[JblBarCoordinator]):
     """Entity backed by the remote's state document."""
 
@@ -40,6 +54,10 @@ class JblBarEntity(CoordinatorEntity[JblBarCoordinator]):
     @property
     def available(self) -> bool:
         return super().available and bool(self.state_doc.get("available"))
+
+    @property
+    def eq_ready(self) -> bool:
+        return bool((self.state_doc.get("eq") or {}).get("available"))
 
     @property
     def awake(self) -> bool:

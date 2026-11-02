@@ -37,6 +37,7 @@ class FakeRemote:
         }
         self.log: list[tuple] = []
         self.forbid_ha = False
+        self.eq_helper = True
         self.streams = 0
         self.changed = asyncio.Condition()
         self.port = 0
@@ -59,11 +60,23 @@ class FakeRemote:
             "bluetooth": {"connected": True, "peer_name": "Pixel", "audio": "Streaming", "selected": False},
             "streaming": {"service": "Chromecast", "status": "Playing", "active": True,
                           "cast": {"title": "Song", "artist": "Band", "album": "LP", "player_state": "PLAYING"}},
-            "eq": {"enabled": s["eq_on"], "gains_db": s["eq"], "available": True},
+            "eq": self.eq_state(),
             "system": {"cpu_percent": 12.5, "temperature_c": 51.0,
                        "memory": {"total_bytes": 400, "used_bytes": 100, "available_bytes": 300}},
             "wifi": {"signal_dbm": -50},
         }
+
+    def eq_state(self) -> dict[str, Any]:
+        """Like the Go server: usable only with the helper, while the bar is on."""
+        s = self.s
+        eq = {"enabled": s["eq_on"], "gains_db": s["eq"], "available": False, "status": "unavailable"}
+        if not self.eq_helper:
+            eq["error"] = "EQ support is not installed"
+        elif s["power"] != "On":
+            eq["error"] = "Turn on the bar and start audio to adjust EQ"
+        else:
+            eq["available"], eq["status"] = True, "ready"
+        return eq
 
     async def notify(self) -> None:
         async with self.changed:

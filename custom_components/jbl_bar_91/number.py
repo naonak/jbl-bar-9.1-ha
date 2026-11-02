@@ -8,12 +8,12 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import EQ_BANDS
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity
+from .entity import JblBarEntity, eq_installed
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
     coordinator = entry.runtime_data
-    if ((coordinator.data or {}).get("eq") or {}).get("available"):
+    if eq_installed(coordinator.data):
         add(JblBarEqBand(coordinator, index) for index in range(len(EQ_BANDS)))
 
 
@@ -39,6 +39,10 @@ class JblBarEqBand(JblBarEntity, NumberEntity):
         self._index = index
         frequency = EQ_BANDS[index]
         self._attr_translation_placeholders = {"band": f"{frequency // 1000} kHz" if frequency >= 1000 else f"{frequency} Hz"}
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.eq_ready
 
     @property
     def native_value(self) -> float:

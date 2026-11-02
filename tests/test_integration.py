@@ -113,6 +113,26 @@ async def test_front_eq(hass: HomeAssistant, remote) -> None:
     assert remote.actions() == ["eq_reset"] and remote.s["eq_on"] is False
 
 
+async def test_eq_entities_exist_when_added_in_standby(hass: HomeAssistant, remote) -> None:
+    remote.s["power"] = "Standby"
+    entry = await setup(hass, remote)
+    preset, band = "select.jbl_bar_9_1_front_eq_preset", "number.jbl_bar_9_1_front_eq_125_hz"
+    assert hass.states.get(preset).state == "unavailable"
+    assert hass.states.get(band).state == "unavailable"
+    remote.s["power"] = "On"
+    await entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(preset).state == "original"
+    assert hass.states.get(band).state == "0.0"
+
+
+async def test_no_eq_entities_without_helper(hass: HomeAssistant, remote) -> None:
+    remote.eq_helper = False
+    await setup(hass, remote)
+    assert hass.states.get("select.jbl_bar_9_1_front_eq_preset") is None
+    assert hass.states.get("number.jbl_bar_9_1_front_eq_125_hz") is None
+
+
 async def test_night_switch_is_idempotent(hass: HomeAssistant, remote) -> None:
     await setup(hass, remote)
     remote.log.clear()

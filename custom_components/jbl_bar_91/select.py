@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import EQ_PRESETS
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity
+from .entity import JblBarEntity, eq_installed
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -35,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: 
     sound = (coordinator.data or {}).get("sound") or {}
     # Center only exists on remotes that include the center-level control.
     entities: list[SelectEntity] = [JblBarLevel(coordinator, level) for level in LEVELS if level.field != "center" or "center" in sound]
-    if ((coordinator.data or {}).get("eq") or {}).get("available"):
+    if eq_installed(coordinator.data):
         entities.append(JblBarEqPreset(coordinator, "eq_preset"))
     add(entities)
 
@@ -69,6 +69,10 @@ class JblBarEqPreset(JblBarEntity, SelectEntity):
 
     _attr_icon = "mdi:tune-vertical"
     _attr_options = list(EQ_PRESETS)
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.eq_ready
 
     @property
     def current_option(self) -> str | None:
