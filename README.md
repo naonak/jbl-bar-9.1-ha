@@ -31,7 +31,7 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 | Front EQ 125 Hz … 8 kHz | −6 to 0 dB per band; each change applies the full curve |
 | Night mode | Switch |
 | Smart mode | Switch: on = Smart, off = Standard (the bar returns to Smart at power-on). Needs a remote with the advanced controls |
-| Audio sync | Lip-sync delay, 0–250 ms in 10 ms steps, TV and HDMI inputs only (each change takes about ten to fifteen seconds per 50 ms). Needs a remote with the advanced controls |
+| Audio sync | Lip-sync delay, 0–250 ms in 10 ms steps, TV and HDMI inputs only (one request per change: about 10 s plus one second per 10 ms step). Needs a remote with the advanced controls |
 | Bluetooth pairing | Button |
 | Calibrate surround | Button: starts the next step of the wireless surround calibration (both rear speakers undocked; step 1 near your listening position, step 2 at their final places; about 35 s each). Needs a remote with the setup controls |
 | Pair subwoofer | Button: opens subwoofer pairing on the bar for up to three minutes; then hold the button on the back of the subwoofer until it flashes white quickly. Needs a remote with the setup controls |

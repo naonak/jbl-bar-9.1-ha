@@ -193,9 +193,18 @@ async def test_audio_sync_in_chunks(hass: HomeAssistant, remote) -> None:
     remote.log.clear()
     await call(hass, "number", "set_value", num, value=120)
     assert remote.av_sync == 120 and hass.states.get(num).state == "120"
-    assert [(e[1], e[3]) for e in remote.log if e[0] == "ok"] == [("av_sync_set", 50), ("av_sync_set", 100), ("av_sync_set", 120)]
+    assert [(e[1], e[3]) for e in remote.log if e[0] == "ok"] == [("av_sync_set", 120)]
     await call(hass, "number", "set_value", num, value=100)
     assert remote.av_sync == 100
+
+
+async def test_audio_sync_split_for_older_remotes(hass: HomeAssistant, remote) -> None:
+    remote.av_sync_limit = 80
+    await setup(hass, remote)
+    remote.log.clear()
+    await call(hass, "number", "set_value", "number.jbl_bar_9_1_audio_sync", value=120)
+    assert remote.av_sync == 120
+    assert [e[3] for e in remote.log if e[0] == "ok"] == [120, 50, 100, 120]
 
 
 async def test_audio_sync_unavailable_on_bluetooth(hass: HomeAssistant, remote) -> None:

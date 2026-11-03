@@ -41,6 +41,7 @@ class FakeRemote:
         self.advanced = True
         self.mode = "Standard"
         self.av_sync = 0
+        self.av_sync_limit = 250
         self.setup: dict[str, Any] | None = {"sub_pairing": False}
         self.rear_docked = False
         self.streams = 0
@@ -109,7 +110,9 @@ class FakeRemote:
             v = req.get("value")
             if s["input"] not in ("TV / ARC", "HDMI"):
                 return web.json_response({"error": "select the TV or HDMI input to adjust audio sync", "state": self.state()}, status=409)
-            if not isinstance(v, int) or v % 10 or not 0 <= v <= 250 or abs(v - self.av_sync) > 50:
+            if isinstance(v, int) and abs(v - self.av_sync) > self.av_sync_limit:
+                return web.json_response({"error": f"change audio sync by at most {self.av_sync_limit} ms per request", "state": self.state()}, status=409)
+            if not isinstance(v, int) or v % 10 or not 0 <= v <= 250:
                 return web.json_response({"error": "audio sync value refused", "state": self.state()}, status=409)
             self.av_sync = v
             await self.notify()

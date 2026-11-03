@@ -17,6 +17,8 @@ import aiohttp
 
 STATE_TIMEOUT = aiohttp.ClientTimeout(total=10)
 ACTION_TIMEOUT = aiohttp.ClientTimeout(total=40)
+# A whole-range audio sync change runs in one sync session (up to 60 s on the remote).
+AV_SYNC_TIMEOUT = aiohttp.ClientTimeout(total=75)
 # The remote sends a keepalive comment every 15 s.
 EVENTS_TIMEOUT = aiohttp.ClientTimeout(total=None, sock_connect=10, sock_read=45)
 
@@ -84,7 +86,7 @@ class JblBarClient:
                         f"{self._base}/api/action",
                         data=json.dumps(payload),
                         headers={"Content-Type": "application/json", "X-CSRF-Token": self._csrf or ""},
-                        timeout=ACTION_TIMEOUT,
+                        timeout=AV_SYNC_TIMEOUT if action == "av_sync_set" else ACTION_TIMEOUT,
                     ) as resp:
                         if resp.status == 200:
                             return self._remember(await resp.json(content_type=None))

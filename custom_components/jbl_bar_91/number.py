@@ -4,9 +4,10 @@ from __future__ import annotations
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import AV_SYNC_CHUNK, AV_SYNC_MAX, AV_SYNC_SOURCES, AV_SYNC_STEP, EQ_BANDS
+from .const import AV_SYNC_CHUNK, AV_SYNC_LEGACY_CHUNK, AV_SYNC_MAX, AV_SYNC_SOURCES, AV_SYNC_STEP, EQ_BANDS
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
 from .entity import JblBarEntity, advanced_controls, eq_installed
 
@@ -62,7 +63,7 @@ class JblBarEqBand(JblBarEntity, NumberEntity):
 
 
 class JblBarAudioSync(JblBarEntity, NumberEntity):
-    """Lip-sync delay, stepped by the remote in chunks of at most 50 ms."""
+    """Lip-sync delay, set in one request (one sync session on the bar)."""
 
     _attr_native_min_value = 0
     _attr_native_max_value = AV_SYNC_MAX
@@ -82,9 +83,16 @@ class JblBarAudioSync(JblBarEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         target = max(0, min(AV_SYNC_MAX, int(round(value / AV_SYNC_STEP)) * AV_SYNC_STEP))
-        for _ in range(AV_SYNC_MAX // AV_SYNC_CHUNK + 2):
+        chunk = AV_SYNC_CHUNK
+        for _ in range(AV_SYNC_MAX // AV_SYNC_LEGACY_CHUNK + 2):
             current = self.sound.get("av_sync_ms")
             if current is None or current == target:
                 return
-            step = max(-AV_SYNC_CHUNK, min(AV_SYNC_CHUNK, target - current))
-            await self.coordinator.async_action("av_sync_set", value=current + step)
+            step = max(-chunk, min(chunk, target - current))
+            try:
+                await self.coordinator.async_action("av_sync_set", value=current + step)
+            except HomeAssistantError as err:
+                # Older remotes accept at most 80 ms per request: split the change.
+                if chunk == AV_SYNC_LEGACY_CHUNK or "at most" not in str(err.__cause__ or err):
+                    raise
+                chunk = AV_SYNC_LEGACY_CHUNK
