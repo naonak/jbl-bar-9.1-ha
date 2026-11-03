@@ -143,6 +143,9 @@
       },
       "bluetooth_connected": {
         "name": "Bluetooth connected"
+      },
+      "command_running": {
+        "name": "Command running"
       }
     }
   },
@@ -158,6 +161,9 @@
     },
     "not_reached": {
       "message": "The requested level was not confirmed by the soundbar."
+    },
+    "busy": {
+      "message": "The soundbar is still running another control; try again when it finishes."
     }
   }
 }

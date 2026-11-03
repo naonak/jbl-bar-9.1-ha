@@ -33,6 +33,7 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 | Smart mode | Switch: on = Smart, off = Standard (the bar returns to Smart at power-on). Needs a remote with the advanced controls |
 | Audio sync | Lip-sync delay, 0–250 ms in 10 ms steps, TV and HDMI inputs only (one request per change: about 10 s plus one second per 10 ms step). Needs a remote with the advanced controls |
 | Bluetooth pairing | Button |
+| Command running | Binary sensor: on while a command runs, sent from Home Assistant (`source: home_assistant`) or elsewhere (`source: remote`: the web page, another client, a calibration); `action` names it |
 | Calibrate surround | Button: starts the next step of the wireless surround calibration (both rear speakers undocked; step 1 near your listening position, step 2 at their final places; about 35 s each). Needs a remote with the setup controls |
 | Pair subwoofer | Button: opens subwoofer pairing on the bar for up to three minutes; then hold the button on the back of the subwoofer until it flashes white quickly. Needs a remote with the setup controls |
 | Audio format | Sensor: what the bar last showed for the incoming stream, e.g. `DOLBY SURROUND DD+` (while on). Needs a remote with the setup controls |
@@ -46,6 +47,7 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 
 - **Live updates.** While the bar is on, the integration listens to the remote's event stream, so changes from the physical remote or the web page appear immediately. The stream makes the remote sample the bar every second, so it is closed in standby; a light state request every 15 s then detects the wake.
 - **Same rules as the web page.** One control at a time. Levels that the bar can only cycle (bass, center, Atmos, rear, volume) are stepped one press at a time with read-back before the next. Switches and mute only send a toggle when the read-back state differs.
+- **One command after the other.** A command waits (up to 90 s) while another control runs on the bar, whoever sent it, and is sent once the bar is free; "Another control is running" is refused by the remote before it acts, so that one refusal is followed by a new attempt. In scripts each step already waits for the bar's confirmation; to wait for commands sent elsewhere, use `wait_template: "{{ is_state('binary_sensor.jbl_bar_9_1_command_running', 'off') }}"`.
 - **Refusals are shown, never retried.** If the remote refuses a control (for example a playback command the source does not support, rear levels while the speakers are docked, or another control already running), Home Assistant shows the remote's message. A stale security token after a remote restart is refreshed and the request is sent once more, because the remote rejects such requests before acting.
 - **Front EQ** follows the remote: cuts only, front left/right only, and it resets when the bar restarts.
 

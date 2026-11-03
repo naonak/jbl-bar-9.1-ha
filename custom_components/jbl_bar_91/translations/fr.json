@@ -143,6 +143,9 @@
       },
       "bluetooth_connected": {
         "name": "Bluetooth connecté"
+      },
+      "command_running": {
+        "name": "Commande en cours"
       }
     }
   },
@@ -158,6 +161,9 @@
     },
     "not_reached": {
       "message": "La barre n'a pas confirmé le niveau demandé."
+    },
+    "busy": {
+      "message": "La barre exécute encore une autre commande ; réessayez quand elle est terminée."
     }
   }
 }

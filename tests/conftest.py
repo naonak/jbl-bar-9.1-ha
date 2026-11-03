@@ -42,6 +42,8 @@ class FakeRemote:
         self.mode = "Standard"
         self.av_sync = 0
         self.av_sync_limit = 250
+        self.busy_other: str | None = None  # a control sent by another client is running
+        self.action_delay = 0.0
         self.setup: dict[str, Any] | None = {"sub_pairing": False}
         self.rear_docked = False
         self.streams = 0
@@ -66,6 +68,7 @@ class FakeRemote:
                       **({"av_sync_ms": self.av_sync} if self.advanced else {}),
                       **({"audio_format": "DOLBY SURROUND DD+"} if self.setup is not None and s["power"] == "On" else {})},
             **({"setup": self.setup} if self.setup is not None else {}),
+            "control": {"busy": True, "action": self.busy_other, "since": 1} if self.busy_other else {"busy": False},
             "bluetooth": {"connected": True, "peer_name": "Pixel", "audio": "Streaming", "selected": False},
             "streaming": {"service": "Chromecast", "status": "Playing", "active": True,
                           "cast": {"title": "Song", "artist": "Band", "album": "LP", "player_state": "PLAYING"}},
@@ -105,6 +108,11 @@ class FakeRemote:
             return web.Response(status=403, text="Refresh the page before using controls")
         req = await request.json()
         a, s = req["action"], self.s
+        if self.busy_other:
+            self.log.append(("busy", a))
+            return web.json_response({"error": "Another control is running", "state": self.state()}, status=409)
+        if self.action_delay:
+            await asyncio.sleep(self.action_delay)
         self.log.append(("ok", a, req.get("gains_db"), req.get("value")))
         if a == "av_sync_set":
             v = req.get("value")

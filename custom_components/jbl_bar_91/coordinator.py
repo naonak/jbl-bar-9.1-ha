@@ -20,6 +20,11 @@ POLL_INTERVAL = timedelta(seconds=15)
 IDLE_CHECK = 5
 RECONNECT_MIN = 5
 RECONNECT_MAX = 60
+# How long a command waits for a control running elsewhere (another page, an
+# automation, a calibration) before giving up.
+BUSY_WAIT = 90
+CALIBRATION_RUNNING = ("Step 1 starting", "Step 2 starting", "Measuring")
+REMOTE_BUSY_ERROR = "Another control is running"
 
 type JblBarConfigEntry = ConfigEntry["JblBarCoordinator"]
 
@@ -36,12 +41,41 @@ class JblBarCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         super().__init__(hass, LOGGER, name=DOMAIN, config_entry=entry, update_interval=POLL_INTERVAL)
         self.client = client
         self._push_task: asyncio.Task | None = None
+        # Command sent by Home Assistant and not answered yet.
+        self.local_action: str | None = None
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:
             return await self.client.get_state()
         except JblBarError as err:
             raise UpdateFailed(translation_domain=DOMAIN, translation_key="unreachable", translation_placeholders={"error": str(err)}) from err
+
+    @property
+    def remote_busy(self) -> bool:
+        """A control runs on the remote (from any client) or the bar is calibrating."""
+        doc = self.data or {}
+        calibration = (doc.get("setup") or {}).get("calibration") or ""
+        return bool((doc.get("control") or {}).get("busy")) or calibration in CALIBRATION_RUNNING or calibration.startswith("Starting in")
+
+    @property
+    def busy(self) -> bool:
+        return self.local_action is not None or self.remote_busy
+
+    async def _async_wait_idle(self, deadline: float) -> None:
+        """Wait until no control runs on the remote; the stream pushes the change, polling covers standby."""
+        loop = asyncio.get_running_loop()
+        last_poll = 0.0
+        while self.remote_busy:
+            now = loop.time()
+            if now >= deadline:
+                raise HomeAssistantError(translation_domain=DOMAIN, translation_key="busy")
+            if now - last_poll >= 2:
+                last_poll = now
+                try:
+                    self.async_set_updated_data(await self.client.get_state())
+                except JblBarError:
+                    pass
+            await asyncio.sleep(0.25)
 
     @property
     def awake(self) -> bool:
@@ -74,19 +108,40 @@ class JblBarCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await asyncio.sleep(delay)
 
     async def async_action(self, action: str, gains_db: list[float] | None = None, value: int | None = None) -> None:
-        """Send one control and publish the confirmed state."""
+        """Send one control once the bar is free, and publish the confirmed state.
+
+        A control already running (sent from another page, an automation or a
+        calibration) is waited for. "Another control is running" is refused by
+        the remote before it acts, so the command is sent again once the bar is
+        free; every other refusal is reported and never retried.
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + BUSY_WAIT
+        self.local_action = action
+        self.async_update_listeners()
         try:
-            state = await self.client.action(action, gains_db, value)
-        except JblBarRefused as err:
-            if err.state:
-                self.async_set_updated_data(err.state)
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="refused", translation_placeholders={"error": str(err)}
-            ) from err
-        except JblBarError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN, translation_key="unreachable", translation_placeholders={"error": str(err)}
-            ) from err
+            while True:
+                await self._async_wait_idle(deadline)
+                try:
+                    state = await self.client.action(action, gains_db, value)
+                    break
+                except JblBarRefused as err:
+                    if err.state:
+                        self.async_set_updated_data(err.state)
+                    if str(err) == REMOTE_BUSY_ERROR and loop.time() < deadline:
+                        if not self.remote_busy:
+                            await asyncio.sleep(0.5)
+                        continue
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN, translation_key="refused", translation_placeholders={"error": str(err)}
+                    ) from err
+                except JblBarError as err:
+                    raise HomeAssistantError(
+                        translation_domain=DOMAIN, translation_key="unreachable", translation_placeholders={"error": str(err)}
+                    ) from err
+        finally:
+            self.local_action = None
+            self.async_update_listeners()
         self.async_set_updated_data(state)
 
     async def async_step_to(self, action: str | Callable[[int], str], read: Callable[[dict[str, Any]], int | None], target: int, limit: int) -> None:

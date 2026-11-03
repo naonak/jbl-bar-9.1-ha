@@ -269,6 +269,62 @@ async def test_no_setup_entities_on_older_remote(hass: HomeAssistant, remote) ->
         assert hass.states.get(entity_id) is None
 
 
+async def test_waits_for_a_control_running_elsewhere(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    remote.busy_other = "av_sync_set"
+    await remote.notify()
+    assert await until(lambda: hass.states.get("binary_sensor.jbl_bar_9_1_command_running").state == "on")
+    assert hass.states.get("binary_sensor.jbl_bar_9_1_command_running").attributes["source"] == "remote"
+    remote.log.clear()
+
+    async def finish() -> None:
+        await asyncio.sleep(0.6)
+        remote.busy_other = None
+        await remote.notify()
+
+    task = hass.async_create_task(finish())
+    await call(hass, "media_player", "volume_up", MP)
+    await task
+    assert remote.s["volume"] == 11 and remote.actions() == ["volume_up"]
+    assert await until(lambda: hass.states.get("binary_sensor.jbl_bar_9_1_command_running").state == "off")
+
+
+async def test_resends_after_another_control_is_running(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    remote.log.clear()
+    # The remote refuses before acting; the state does not report busy (older remote).
+    real_state = remote.state
+
+    def refuse_once() -> dict:
+        return real_state()
+
+    remote.busy_other = "smart"
+    remote.state = lambda: {**refuse_once(), "control": {"busy": False}}
+
+    async def finish() -> None:
+        await asyncio.sleep(0.3)
+        remote.busy_other = None
+
+    task = hass.async_create_task(finish())
+    await call(hass, "media_player", "volume_up", MP)
+    await task
+    remote.state = real_state
+    assert [e[0] for e in remote.log][-1] == "ok" and ("busy", "volume_up") in remote.log and remote.actions() == ["volume_up"]
+
+
+async def test_command_running_while_home_assistant_waits(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    sensor = "binary_sensor.jbl_bar_9_1_command_running"
+    assert hass.states.get(sensor).state == "off"
+    remote.action_delay = 0.5
+    task = hass.async_create_task(call(hass, "switch", "turn_on", "switch.jbl_bar_9_1_night_mode"))
+    assert await until(lambda: hass.states.get(sensor).state == "on")
+    attrs = hass.states.get(sensor).attributes
+    assert attrs["source"] == "home_assistant" and attrs["action"] == "night_toggle"
+    await task
+    assert await until(lambda: hass.states.get(sensor).state == "off")
+
+
 async def test_unload(hass: HomeAssistant, remote) -> None:
     entry = await setup(hass, remote)
     assert await hass.config_entries.async_unload(entry.entry_id)
