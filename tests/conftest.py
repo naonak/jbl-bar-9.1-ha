@@ -104,12 +104,12 @@ class FakeRemote:
             return web.Response(status=403, text="Refresh the page before using controls")
         req = await request.json()
         a, s = req["action"], self.s
-        self.log.append(("ok", a, req.get("gains_db")))
+        self.log.append(("ok", a, req.get("gains_db"), req.get("value")))
         if a == "av_sync_set":
             v = req.get("value")
             if s["input"] not in ("TV / ARC", "HDMI"):
                 return web.json_response({"error": "select the TV or HDMI input to adjust audio sync", "state": self.state()}, status=409)
-            if not isinstance(v, int) or v % 10 or not 0 <= v <= 250 or abs(v - self.av_sync) > 80:
+            if not isinstance(v, int) or v % 10 or not 0 <= v <= 250 or abs(v - self.av_sync) > 50:
                 return web.json_response({"error": "audio sync value refused", "state": self.state()}, status=409)
             self.av_sync = v
             await self.notify()

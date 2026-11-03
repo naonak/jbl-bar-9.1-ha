@@ -193,7 +193,7 @@ async def test_audio_sync_in_chunks(hass: HomeAssistant, remote) -> None:
     remote.log.clear()
     await call(hass, "number", "set_value", num, value=120)
     assert remote.av_sync == 120 and hass.states.get(num).state == "120"
-    assert [e[1] for e in remote.log if e[0] == "ok"] == ["av_sync_set", "av_sync_set"]
+    assert [(e[1], e[3]) for e in remote.log if e[0] == "ok"] == [("av_sync_set", 50), ("av_sync_set", 100), ("av_sync_set", 120)]
     await call(hass, "number", "set_value", num, value=100)
     assert remote.av_sync == 100
 

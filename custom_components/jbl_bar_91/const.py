@@ -24,10 +24,10 @@ EQ_PRESETS: dict[str, list[float]] = {
 EQ_BANDS = (125, 500, 2000, 4000, 8000)
 
 # Audio sync (lip-sync) delay: 10 ms steps up to 250 ms; the remote accepts
-# at most 80 ms of change per request and only on TV/ARC (0) and HDMI (3).
+# at most 50 ms of change per request and only on TV/ARC (0) and HDMI (3).
 AV_SYNC_STEP = 10
 AV_SYNC_MAX = 250
-AV_SYNC_CHUNK = 80
+AV_SYNC_CHUNK = 50
 AV_SYNC_SOURCES = (0, 3)
 
 # Center levels exposed by remotes that include the center-level control.

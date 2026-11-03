@@ -62,7 +62,7 @@ class JblBarEqBand(JblBarEntity, NumberEntity):
 
 
 class JblBarAudioSync(JblBarEntity, NumberEntity):
-    """Lip-sync delay, stepped by the remote in chunks of at most 80 ms."""
+    """Lip-sync delay, stepped by the remote in chunks of at most 50 ms."""
 
     _attr_native_min_value = 0
     _attr_native_max_value = AV_SYNC_MAX
