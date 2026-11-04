@@ -7,9 +7,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import AV_SYNC_CHUNK, AV_SYNC_LEGACY_CHUNK, AV_SYNC_MAX, AV_SYNC_SOURCES, AV_SYNC_STEP, EQ_BANDS
+from .const import DOMAIN, AV_SYNC_CHUNK, AV_SYNC_LEGACY_CHUNK, AV_SYNC_MAX, AV_SYNC_SOURCES, AV_SYNC_STEP, EQ_BANDS
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity, advanced_controls, eq_installed
+from .entity import BASS_OFFSET, JblBarEntity, advanced_controls, bass_offset_state, eq_installed
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
@@ -19,6 +19,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: 
         entities.extend(JblBarEqBand(coordinator, index) for index in range(len(EQ_BANDS)))
     if advanced_controls(coordinator.data):
         entities.append(JblBarAudioSync(coordinator, "audio_sync"))
+    if bass_offset_state(coordinator.data) is not None:
+        entities.append(JblBarBassOffset(coordinator, "bass_offset"))
     add(entities)
 
 
@@ -96,3 +98,31 @@ class JblBarAudioSync(JblBarEntity, NumberEntity):
                 if chunk == AV_SYNC_LEGACY_CHUNK or "at most" not in str(err.__cause__ or err):
                     raise
                 chunk = AV_SYNC_LEGACY_CHUNK
+
+
+class JblBarBassOffset(JblBarEntity, NumberEntity):
+    """Bass offset (mrk1987's extension): -3 to +3 dB on every native bass level, saved for startup."""
+
+    _attr_native_min_value = -3
+    _attr_native_max_value = 3
+    _attr_native_step = 0.5
+    _attr_native_unit_of_measurement = "dB"
+    _attr_mode = NumberMode.SLIDER
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:speaker"
+
+    @property
+    def native_value(self) -> float | None:
+        value = (bass_offset_state(self.state_doc) or {}).get("offset_db")
+        return float(value) if isinstance(value, (int, float)) else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str]:
+        state = bass_offset_state(self.state_doc) or {}
+        return {key: state[key] for key in ("status", "error") if state.get(key)}
+
+    async def async_set_native_value(self, value: float) -> None:
+        offset = round(value * 2) / 2
+        if not -3 <= offset <= 3:
+            raise HomeAssistantError(translation_domain=DOMAIN, translation_key="bass_offset_range")
+        await self.coordinator.async_action(f"{BASS_OFFSET}.set", parameters={"offset_db": offset})

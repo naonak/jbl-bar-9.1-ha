@@ -32,6 +32,20 @@ def advanced_controls(doc: dict[str, Any] | None) -> bool:
     return "av_sync_ms" in ((doc or {}).get("sound") or {})
 
 
+BASS_OFFSET = "bar91.bass-offset"
+
+
+def bass_offset_state(doc: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The bass offset extension's state (offset_db, status, error), if included."""
+    value = ((doc or {}).get("extensions") or {}).get(BASS_OFFSET)
+    return value if isinstance(value, dict) else None
+
+
+def smart_mode_memory(doc: dict[str, Any] | None) -> bool:
+    """True when the remote restores the mode chosen before standby (smart_mode_memory)."""
+    return ((doc or {}).get("automation") or {}).get("remembered_mode") in ("Standard", "Smart")
+
+
 def setup_controls(doc: dict[str, Any] | None) -> bool:
     """True when the remote reads the bar's display (calibration, subwoofer pairing, audio format)."""
     return isinstance((doc or {}).get("setup"), dict)

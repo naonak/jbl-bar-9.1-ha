@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity, setup_controls
+from .entity import JblBarEntity, setup_controls, smart_mode_memory
 
 
 def _memory(doc: dict[str, Any]) -> float | None:
@@ -57,8 +57,16 @@ SETUP_SENSORS = [
 ]
 
 
+# smart_mode_memory: the mode the bar returns to after the next wake.
+MEMORY_SENSORS = [
+    Description(key="mode_after_standby", icon="mdi:auto-mode", entity_category=DIAG,
+                value=lambda d: ((d.get("automation") or {}).get("remembered_mode") or "").lower() or None),
+]
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
-    descriptions = SENSORS + (SETUP_SENSORS if setup_controls(entry.runtime_data.data) else [])
+    descriptions = (SENSORS + (SETUP_SENSORS if setup_controls(entry.runtime_data.data) else [])
+                    + (MEMORY_SENSORS if smart_mode_memory(entry.runtime_data.data) else []))
     add(JblBarSensor(entry.runtime_data, description) for description in descriptions)
 
 

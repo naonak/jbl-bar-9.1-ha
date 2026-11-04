@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "JBL Bar 9.1",
-        "description": "Adresse de la télécommande web de la barre (kisinga/jbl-bar-9.1). Home Assistant doit être dans le sous-réseau autorisé de la télécommande.",
+        "description": "Adresse de la télécommande web de la barre (kisinga/jbl-bar-toolkit). Home Assistant doit être dans le sous-réseau autorisé de la télécommande.",
         "data": {
           "host": "Hôte"
         },
@@ -29,12 +29,12 @@
       "center": {
         "name": "Niveau centre",
         "state": {
-          "0": "0 (+0 dB)",
-          "1": "1 (+2,4 dB)",
-          "2": "2 (+4,8 dB)",
-          "3": "3 (+7,2 dB)",
-          "4": "4 (+9,6 dB)",
-          "5": "5 (+12 dB)"
+          "0": "1 (origine)",
+          "1": "2 (+2,4 dB)",
+          "2": "3 (+4,8 dB)",
+          "3": "4 (+7,2 dB)",
+          "4": "5 (+9,6 dB)",
+          "5": "6 (+12 dB)"
         }
       },
       "atmos": {
@@ -73,6 +73,9 @@
       },
       "audio_sync": {
         "name": "Synchro audio"
+      },
+      "bass_offset": {
+        "name": "Décalage des basses"
       }
     },
     "switch": {
@@ -135,6 +138,13 @@
       },
       "subwoofer": {
         "name": "Caisson"
+      },
+      "mode_after_standby": {
+        "name": "Mode après la veille",
+        "state": {
+          "standard": "Standard",
+          "smart": "Smart"
+        }
       }
     },
     "binary_sensor": {
@@ -164,6 +174,9 @@
     },
     "busy": {
       "message": "La barre exécute encore une autre commande ; réessayez quand elle est terminée."
+    },
+    "bass_offset_range": {
+      "message": "Le décalage des basses va de -3 à +3 dB par pas de 0,5 dB."
     }
   }
 }

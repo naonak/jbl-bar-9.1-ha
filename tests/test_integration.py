@@ -329,3 +329,38 @@ async def test_unload(hass: HomeAssistant, remote) -> None:
     entry = await setup(hass, remote)
     assert await hass.config_entries.async_unload(entry.entry_id)
     await hass.async_block_till_done()
+
+
+async def test_bass_offset(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    num = "number.jbl_bar_9_1_bass_offset"
+    assert hass.states.get(num).state == "0.0"
+    assert hass.states.get(num).attributes["status"] == "off"
+    remote.log.clear()
+    await call(hass, "number", "set_value", num, value=-1.5)
+    assert remote.bass_offset == -1.5 and hass.states.get(num).state == "-1.5"
+    assert [(e[1], e[4]) for e in remote.log if e[0] == "ok"] == [("bar91.bass-offset.set", {"offset_db": -1.5})]
+    assert hass.states.get(num).attributes["status"] == "active"
+
+
+async def test_bass_offset_needs_the_extension(hass: HomeAssistant, remote) -> None:
+    remote.bass_offset = None
+    await setup(hass, remote)
+    assert hass.states.get("number.jbl_bar_9_1_bass_offset") is None
+
+
+async def test_mode_after_standby(hass: HomeAssistant, remote) -> None:
+    remote.remembered_mode = "Smart"
+    await setup(hass, remote)
+    assert hass.states.get("sensor.jbl_bar_9_1_mode_after_standby").state == "smart"
+
+
+async def test_no_mode_after_standby_without_memory(hass: HomeAssistant, remote) -> None:
+    await setup(hass, remote)
+    assert hass.states.get("sensor.jbl_bar_9_1_mode_after_standby") is None
+
+
+async def test_center_options_unchanged(hass: HomeAssistant, remote) -> None:
+    """Center is shown 1-6 through translations; option values stay 0-5 for automations."""
+    await setup(hass, remote)
+    assert hass.states.get("select.jbl_bar_9_1_center_level").attributes["options"] == ["0", "1", "2", "3", "4", "5"]

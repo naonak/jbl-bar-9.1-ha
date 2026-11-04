@@ -1,22 +1,24 @@
-# JBL Bar 9.1 for Home Assistant
+# JBL Bar Toolkit for Home Assistant
 
-Control a **JBL Bar 9.1 True Wireless Surround** from Home Assistant through the soundbar's local browser remote from [kisinga/jbl-bar-9.1](https://github.com/kisinga/jbl-bar-9.1). No cloud, no extra hardware: Home Assistant talks to the remote on your LAN.
+Control a **JBL Bar 9.1 True Wireless Surround** from Home Assistant through the soundbar's local browser remote from [kisinga/jbl-bar-toolkit](https://github.com/kisinga/jbl-bar-toolkit). No cloud, no extra hardware: Home Assistant talks to the remote on your LAN. Only the Bar 9.1 is supported, like the toolkit's packaged remote.
+
+> **Renamed.** This repository was `naonak/jbl-bar-9.1-ha`, following the toolkit's own rename (`kisinga/jbl-bar-9.1` → `kisinga/jbl-bar-toolkit`). Existing installations keep working: the integration's domain (`jbl_bar_91`), devices and entities are unchanged. In HACS, replace the custom repository URL with `https://github.com/naonak/jbl-bar-toolkit-ha`.
 
 Not affiliated with JBL or Harman. Experimental, like the remote it relies on.
 
 ## Requirements
 
-- The **browser remote** from [kisinga/jbl-bar-9.1](https://github.com/kisinga/jbl-bar-9.1#local-browser-remote) installed on the bar and reachable at `http://<bar-ip>:8080`.
+- The **browser remote** from [kisinga/jbl-bar-toolkit](https://github.com/kisinga/jbl-bar-toolkit) installed on the bar (the toolkit USB with the web remote, or an owner build) and reachable at `http://<bar-ip>` or `http://<bar-ip>:8080`.
 - Home Assistant **2025.1** or newer.
-- Home Assistant's IP address inside the remote's `allowed_cidr` (the subnet given to `tools/build_web.py --allowed-cidr`). Otherwise setup reports that the remote refused Home Assistant.
+- Home Assistant's IP address inside the remote's trusted network (`allowed_cidr` in the toolkit's `config.txt`, or `tools/build_web.py --allowed-cidr`). Otherwise setup reports that the remote refused Home Assistant.
 
 ## Installation
 
-**HACS:** HACS → ⋮ → *Custom repositories* → add this repository's URL with category *Integration*, then install **JBL Bar 9.1 (web remote)** and restart Home Assistant.
+**HACS:** HACS → ⋮ → *Custom repositories* → add this repository's URL with category *Integration*, then install **JBL Bar Toolkit (Bar 9.1)** and restart Home Assistant.
 
 **Manual:** copy `custom_components/jbl_bar_91` into your Home Assistant `config/custom_components/` folder and restart.
 
-Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web remote)*, and enter the bar's IP address (`192.168.1.50` or `192.168.1.50:8080`).
+Then: *Settings → Devices & services → Add integration → JBL Bar Toolkit (Bar 9.1)*, and enter the bar's IP address (`192.168.1.50`, `192.168.1.50:80` or `192.168.1.50:8080`).
 
 ## Entities
 
@@ -24,7 +26,8 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 | --- | --- |
 | Media player | Power, volume (0–32 shown as 0–100 %), mute, source (TV, HDMI, Bluetooth), play/pause/next/previous/stop when the current source supports them, now playing (title, artist, album, app) |
 | Bass level | 1–5 |
-| Center level | 0–5 (+0 to +12 dB), only when the remote includes the center-level control |
+| Center level | 1–6 like the web page: 1 = original, up to +12 dB at 6 (the option values stay `0`–`5`, so automations are unchanged). Only when the remote includes the center-level control |
+| Bass offset | −3 to +3 dB in 0.5 dB steps on every native bass level, saved on the bar for startup (the toolkit's experimental bass offset); attributes `status`, `error`. Only when the remote includes it |
 | Atmos height | Low, Mid, High |
 | Rear speakers | Low, Mid, High, Muted (rear speakers must be undocked) |
 | Front EQ preset | The remote's presets: Original, Less bass, Clear dialogue, Softer treble, Warm, Bright, Vocal focus |
@@ -38,6 +41,7 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 | Pair subwoofer | Button: opens subwoofer pairing on the bar for up to three minutes; then hold the button on the back of the subwoofer until it flashes white quickly. Needs a remote with the setup controls |
 | Audio format | Sensor: what the bar last showed for the incoming stream, e.g. `DOLBY SURROUND DD+` (while on). Needs a remote with the setup controls |
 | Calibration, Subwoofer | Diagnostic sensors: calibration progress (Idle, Measuring, Step 1 done…) and subwoofer pairing/connection messages |
+| Mode after standby | Diagnostic sensor: Standard or Smart, the mode the bar returns to after the next wake. Only when the remote restores the mode chosen before standby (`smart_mode_memory`) |
 | Standard mode | Button, only with older remotes (replaced by the Smart mode switch) |
 | Sound mode, Bluetooth device, Bluetooth audio | Sensors |
 | Rear speakers docked, Bluetooth connected | Binary sensors |
@@ -54,7 +58,7 @@ Then: *Settings → Devices & services → Add integration → JBL Bar 9.1 (web 
 ## Troubleshooting
 
 - *The remote refused Home Assistant*: rebuild the remote with an `allowed_cidr` that includes Home Assistant's address, and use the bar's IP address rather than `jbl.local`.
-- *Cannot reach the browser remote*: check `http://<bar-ip>:8080` in a browser on the same network.
+- *Cannot reach the browser remote*: check `http://<bar-ip>` (or `:8080`) in a browser on the same network.
 - Diagnostics (*Download diagnostics* on the device page) contain the last state with the security token and names removed.
 
 ## Development
@@ -68,7 +72,7 @@ Tests run Home Assistant against a fake remote that enforces the real API rules 
 
 ## Français
 
-Intégration Home Assistant pour la **JBL Bar 9.1**, via la télécommande web locale de [kisinga/jbl-bar-9.1](https://github.com/kisinga/jbl-bar-9.1). Installez d'abord cette télécommande sur la barre, avec un `allowed_cidr` qui inclut l'adresse de Home Assistant. Ajoutez ensuite ce dépôt dans HACS (*Dépôts personnalisés*, catégorie *Intégration*), installez-le, redémarrez, puis ajoutez l'intégration en saisissant l'IP de la barre. L'interface est traduite en français.
+Intégration Home Assistant pour la **JBL Bar 9.1**, via la télécommande web locale de [kisinga/jbl-bar-toolkit](https://github.com/kisinga/jbl-bar-toolkit) (dépôt anciennement `naonak/jbl-bar-9.1-ha` : mettez à jour l'URL du dépôt personnalisé dans HACS, les entités ne changent pas). Installez d'abord cette télécommande sur la barre, avec un `allowed_cidr` qui inclut l'adresse de Home Assistant. Ajoutez ensuite ce dépôt dans HACS (*Dépôts personnalisés*, catégorie *Intégration*), installez-le, redémarrez, puis ajoutez l'intégration en saisissant l'IP de la barre. L'interface est traduite en français.
 
 ## License
 

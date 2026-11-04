@@ -107,7 +107,9 @@ class JblBarCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 delay = min(delay * 2, RECONNECT_MAX)
             await asyncio.sleep(delay)
 
-    async def async_action(self, action: str, gains_db: list[float] | None = None, value: int | None = None) -> None:
+    async def async_action(
+        self, action: str, gains_db: list[float] | None = None, value: int | None = None, parameters: dict | None = None
+    ) -> None:
         """Send one control once the bar is free, and publish the confirmed state.
 
         A control already running (sent from another page, an automation or a
@@ -123,7 +125,7 @@ class JblBarCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             while True:
                 await self._async_wait_idle(deadline)
                 try:
-                    state = await self.client.action(action, gains_db, value)
+                    state = await self.client.action(action, gains_db, value, parameters)
                     break
                 except JblBarRefused as err:
                     if err.state:

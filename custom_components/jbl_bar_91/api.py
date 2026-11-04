@@ -1,4 +1,4 @@
-"""Client for the JBL Bar 9.1 browser remote API (kisinga/jbl-bar-9.1).
+"""Client for the JBL Bar 9.1 browser remote API (kisinga/jbl-bar-toolkit).
 
 Only the remote's fixed endpoints are used: GET /api/state, GET /api/events
 and POST /api/action with its CSRF token. One control runs at a time. A
@@ -71,12 +71,17 @@ class JblBarClient:
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:
             raise JblBarError(str(err) or type(err).__name__) from err
 
-    async def action(self, action: str, gains_db: list[float] | None = None, value: int | None = None) -> dict[str, Any]:
+    async def action(
+        self, action: str, gains_db: list[float] | None = None, value: int | None = None, parameters: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         payload: dict[str, Any] = {"action": action}
         if gains_db is not None:
             payload["gains_db"] = gains_db
         if value is not None:
             payload["value"] = value
+        if parameters is not None:
+            # Typed parameters of a namespaced extension action (e.g. bar91.bass-offset.set).
+            payload["parameters"] = parameters
         async with self._lock:
             for attempt in (1, 2):
                 if not self._csrf:

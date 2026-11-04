@@ -46,6 +46,8 @@ class FakeRemote:
         self.action_delay = 0.0
         self.setup: dict[str, Any] | None = {"sub_pairing": False}
         self.rear_docked = False
+        self.bass_offset: float | None = 0.0  # None: remote without the bass offset extension
+        self.remembered_mode: str | None = None  # set when smart_mode_memory is on
         self.streams = 0
         self.changed = asyncio.Condition()
         self.port = 0
@@ -76,6 +78,10 @@ class FakeRemote:
             "system": {"cpu_percent": 12.5, "temperature_c": 51.0,
                        "memory": {"total_bytes": 400, "used_bytes": 100, "available_bytes": 300}},
             "wifi": {"signal_dbm": -50},
+            **({"extensions": {"bar91.bass-offset": {"offset_db": self.bass_offset, "status": "active" if self.bass_offset else "off"}}}
+               if self.bass_offset is not None else {}),
+            **({"automation": {"enabled": True, "engine": "go", "status": "IDLE", "remembered_mode": self.remembered_mode}}
+               if self.remembered_mode else {}),
         }
 
     def eq_state(self) -> dict[str, Any]:
@@ -113,7 +119,15 @@ class FakeRemote:
             return web.json_response({"error": "Another control is running", "state": self.state()}, status=409)
         if self.action_delay:
             await asyncio.sleep(self.action_delay)
-        self.log.append(("ok", a, req.get("gains_db"), req.get("value")))
+        self.log.append(("ok", a, req.get("gains_db"), req.get("value"), req.get("parameters")))
+        if a == "bar91.bass-offset.set":
+            db = (req.get("parameters") or {}).get("offset_db")
+            if self.bass_offset is None or not isinstance(db, (int, float)) or isinstance(db, bool) \
+                    or not -3 <= db <= 3 or db * 2 != int(db * 2) or set(req) - {"action", "parameters"}:
+                return web.json_response({"error": "bass offset must be -3 to 3 dB in 0.5 dB steps", "state": self.state()}, status=409)
+            self.bass_offset = float(db)
+            await self.notify()
+            return web.json_response(self.state())
         if a == "av_sync_set":
             v = req.get("value")
             if s["input"] not in ("TV / ARC", "HDMI"):
