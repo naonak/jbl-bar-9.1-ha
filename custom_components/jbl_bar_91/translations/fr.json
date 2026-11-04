@@ -15,7 +15,8 @@
     "error": {
       "cannot_connect": "Impossible de joindre la télécommande web à cette adresse.",
       "forbidden": "La télécommande refuse Home Assistant. Recompile-la avec un allowed_cidr qui inclut l'adresse IP de Home Assistant.",
-      "not_remote": "Cette adresse ne répond pas comme la télécommande web de la JBL Bar 9.1."
+      "not_remote": "Cette adresse ne répond pas comme la télécommande web de la JBL Bar 9.1.",
+      "unsupported_model": "Cette télécommande du toolkit tourne sur une autre barre (modèle {model}). Cette intégration ne prend en charge que la Bar 9.1 (bar91)."
     },
     "abort": {
       "already_configured": "Cette barre est déjà configurée."
@@ -177,6 +178,9 @@
     },
     "bass_offset_range": {
       "message": "Le décalage des basses va de -3 à +3 dB par pas de 0,5 dB."
+    },
+    "unsupported_model": {
+      "message": "La télécommande du toolkit à cette adresse indique maintenant le modèle {model}. Cette intégration ne prend en charge que la Bar 9.1 (bar91)."
     }
   }
 }

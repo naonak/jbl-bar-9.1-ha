@@ -4,6 +4,8 @@ from __future__ import annotations
 import logging
 
 DOMAIN = "jbl_bar_91"
+# The toolkit model this integration's entities are written for (GET /api/features "model").
+SUPPORTED_MODEL = "bar91"
 LOGGER = logging.getLogger(__package__)
 
 # Sources the remote can select directly, keyed by the name the remote reports.

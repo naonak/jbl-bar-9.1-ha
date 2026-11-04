@@ -1,6 +1,6 @@
 # JBL Bar Toolkit for Home Assistant
 
-Control a **JBL Bar 9.1 True Wireless Surround** from Home Assistant through the soundbar's local browser remote from [kisinga/jbl-bar-toolkit](https://github.com/kisinga/jbl-bar-toolkit). No cloud, no extra hardware: Home Assistant talks to the remote on your LAN. Only the Bar 9.1 is supported, like the toolkit's packaged remote.
+Control a **JBL Bar 9.1 True Wireless Surround** from Home Assistant through the soundbar's local browser remote from [kisinga/jbl-bar-toolkit](https://github.com/kisinga/jbl-bar-toolkit). No cloud, no extra hardware: Home Assistant talks to the remote on your LAN. Only the Bar 9.1 is supported, like the toolkit's packaged remote: setup checks the model the remote reports (`GET /api/features`, `bar91`) and refuses another bar, whose controls differ. Remotes that predate that endpoint are accepted.
 
 > **Renamed.** This repository was `naonak/jbl-bar-9.1-ha`, following the toolkit's own rename (`kisinga/jbl-bar-9.1` → `kisinga/jbl-bar-toolkit`). Existing installations keep working: the integration's domain (`jbl_bar_91`), devices and entities are unchanged. In HACS, replace the custom repository URL with `https://github.com/naonak/jbl-bar-toolkit-ha`.
 
@@ -72,7 +72,7 @@ Tests run Home Assistant against a fake remote that enforces the real API rules 
 
 ## Français
 
-Intégration Home Assistant pour la **JBL Bar 9.1**, via la télécommande web locale de [kisinga/jbl-bar-toolkit](https://github.com/kisinga/jbl-bar-toolkit) (dépôt anciennement `naonak/jbl-bar-9.1-ha` : mettez à jour l'URL du dépôt personnalisé dans HACS, les entités ne changent pas). Installez d'abord cette télécommande sur la barre, avec un `allowed_cidr` qui inclut l'adresse de Home Assistant. Ajoutez ensuite ce dépôt dans HACS (*Dépôts personnalisés*, catégorie *Intégration*), installez-le, redémarrez, puis ajoutez l'intégration en saisissant l'IP de la barre. L'interface est traduite en français.
+Intégration Home Assistant pour la **JBL Bar 9.1**, via la télécommande web locale de [kisinga/jbl-bar-toolkit](https://github.com/kisinga/jbl-bar-toolkit) (dépôt anciennement `naonak/jbl-bar-9.1-ha` : mettez à jour l'URL du dépôt personnalisé dans HACS, les entités ne changent pas). Installez d'abord cette télécommande sur la barre, avec un `allowed_cidr` qui inclut l'adresse de Home Assistant. Ajoutez ensuite ce dépôt dans HACS (*Dépôts personnalisés*, catégorie *Intégration*), installez-le, redémarrez, puis ajoutez l'intégration en saisissant l'IP de la barre. Seule la Bar 9.1 est prise en charge : l'intégration vérifie le modèle annoncé par la télécommande et refuse une autre barre. L'interface est traduite en français.
 
 ## License
 

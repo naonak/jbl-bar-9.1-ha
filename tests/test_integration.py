@@ -364,3 +364,30 @@ async def test_center_options_unchanged(hass: HomeAssistant, remote) -> None:
     """Center is shown 1-6 through translations; option values stay 0-5 for automations."""
     await setup(hass, remote)
     assert hass.states.get("select.jbl_bar_9_1_center_level").attributes["options"] == ["0", "1", "2", "3", "4", "5"]
+
+
+async def test_config_flow_refuses_another_model(hass: HomeAssistant, remote) -> None:
+    remote.model = "bar1300"
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: remote.host})
+    assert result["errors"] == {"base": "unsupported_model"}
+    assert result["description_placeholders"] == {"model": "bar1300"}
+    remote.model = "bar91"
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: remote.host})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_config_flow_accepts_remote_without_features(hass: HomeAssistant, remote) -> None:
+    remote.model = None  # older remote: /api/features answers 404
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": config_entries.SOURCE_USER})
+    result = await hass.config_entries.flow.async_configure(result["flow_id"], {CONF_HOST: remote.host})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
+async def test_setup_refuses_another_model(hass: HomeAssistant, remote) -> None:
+    remote.model = "bar1300"
+    entry = MockConfigEntry(domain=DOMAIN, unique_id=remote.host, data={CONF_HOST: remote.host}, title="JBL Bar 9.1")
+    entry.add_to_hass(hass)
+    assert not await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.state is config_entries.ConfigEntryState.SETUP_ERROR
+    assert hass.states.get(MP) is None

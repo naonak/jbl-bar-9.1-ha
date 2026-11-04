@@ -15,7 +15,8 @@
     "error": {
       "cannot_connect": "Cannot reach the browser remote at this address.",
       "forbidden": "The remote refused Home Assistant. Rebuild the remote with an allowed_cidr that includes Home Assistant's IP address.",
-      "not_remote": "This address does not answer like the JBL Bar 9.1 browser remote."
+      "not_remote": "This address does not answer like the JBL Bar 9.1 browser remote.",
+      "unsupported_model": "This toolkit remote runs on another bar (model {model}). This integration only supports the Bar 9.1 (bar91)."
     },
     "abort": {
       "already_configured": "This soundbar is already configured."
@@ -177,6 +178,9 @@
     },
     "bass_offset_range": {
       "message": "The bass offset goes from -3 to +3 dB in 0.5 dB steps."
+    },
+    "unsupported_model": {
+      "message": "The toolkit remote at this address now reports model {model}. This integration only supports the Bar 9.1 (bar91)."
     }
   }
 }

@@ -71,6 +71,23 @@ class JblBarClient:
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:
             raise JblBarError(str(err) or type(err).__name__) from err
 
+    async def get_model(self) -> str | None:
+        """The toolkit model from GET /api/features, or None when the remote predates it."""
+        try:
+            async with self._session.get(f"{self._base}/api/features", timeout=STATE_TIMEOUT) as resp:
+                if resp.status == 403:
+                    raise JblBarForbidden(await resp.text())
+                if resp.status != 200:
+                    return None
+                try:
+                    features = await resp.json(content_type=None)
+                except ValueError:
+                    return None
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise JblBarError(str(err) or type(err).__name__) from err
+        model = features.get("model") if isinstance(features, dict) else None
+        return model if isinstance(model, str) and model else None
+
     async def action(
         self, action: str, gains_db: list[float] | None = None, value: int | None = None, parameters: dict[str, Any] | None = None
     ) -> dict[str, Any]:

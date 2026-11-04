@@ -46,6 +46,7 @@ class FakeRemote:
         self.action_delay = 0.0
         self.setup: dict[str, Any] | None = {"sub_pairing": False}
         self.rear_docked = False
+        self.model: str | None = "bar91"  # None: remote without /api/features
         self.bass_offset: float | None = 0.0  # None: remote without the bass offset extension
         self.remembered_mode: str | None = None  # set when smart_mode_memory is on
         self.streams = 0
@@ -104,6 +105,13 @@ class FakeRemote:
         if self.forbid_ha:
             return web.Response(status=403, text="Open jbl.local or the bar's local IP address from its trusted network")
         return web.json_response(self.state())
+
+    async def get_features(self, request: web.Request) -> web.Response:
+        if self.forbid_ha:
+            return web.Response(status=403, text="Open jbl.local or the bar's local IP address from its trusted network")
+        if self.model is None:
+            return web.Response(status=404, text="404 page not found")
+        return web.json_response({"schema": 1, "model": self.model, "name": "JBL Bar", "actions": [], "extensions": []})
 
     async def post_action(self, request: web.Request) -> web.Response:
         if request.headers.get("Content-Type") != "application/json":
@@ -191,6 +199,7 @@ class FakeRemote:
     async def start(self) -> None:
         app = web.Application()
         app.router.add_get("/api/state", self.get_state)
+        app.router.add_get("/api/features", self.get_features)
         app.router.add_post("/api/action", self.post_action)
         app.router.add_get("/api/events", self.events)
         self._runner = web.AppRunner(app, handle_signals=False, shutdown_timeout=0.2)
