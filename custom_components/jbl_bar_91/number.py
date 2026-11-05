@@ -45,7 +45,9 @@ class JblBarEqBand(JblBarEntity, NumberEntity):
 
     @property
     def available(self) -> bool:
-        return super().available and self.eq_ready
+        # With a remote that keeps the EQ, a band set while it cannot apply is
+        # saved and applied once Standard audio plays.
+        return super().available and (self.eq_ready or self.eq_keeps)
 
     @property
     def native_value(self) -> float:

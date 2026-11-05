@@ -76,9 +76,9 @@ class JblBarEqPreset(JblBarEntity, SelectEntity):
 
     @property
     def available(self) -> bool:
-        # A kept EQ waiting to be applied again can still be reset (Original),
-        # like the web page's Reset button.
-        return super().available and (self.eq_ready or bool(self.eq.get("kept")))
+        # A remote that keeps the EQ saves a preset it cannot apply yet, and a
+        # kept EQ can always be reset (Original), like the web page.
+        return super().available and (self.eq_ready or self.eq_keeps)
 
     @property
     def current_option(self) -> str | None:

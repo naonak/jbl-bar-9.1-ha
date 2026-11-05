@@ -181,6 +181,9 @@ class FakeRemote:
         elif a == "input_hdmi": s["input"] = "HDMI"
         elif a == "input_tv": s["input"] = "TV / ARC"
         elif a == "input_bluetooth": s["input"] = "Bluetooth"
+        elif a == "eq_apply" and self.keep_eq and not self.eq_state()["available"] and any(req["gains_db"]):
+            # Cannot apply now: the remote keeps it and applies it later.
+            self.eq_kept = list(req["gains_db"])
         elif a == "eq_apply":
             s["eq"], s["eq_on"] = req["gains_db"], True
             self.eq_kept = list(req["gains_db"])

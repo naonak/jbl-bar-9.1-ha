@@ -107,5 +107,12 @@ class JblBarEntity(CoordinatorEntity[JblBarCoordinator]):
         return bool((self.state_doc.get("eq") or {}).get("available"))
 
     @property
+    def eq_keeps(self) -> bool:
+        """The remote keeps the EQ until Reset (it reports eq.kept), and also saves
+        one it cannot apply yet (standby, Smart Mode, another audio route)."""
+        eq = self.state_doc.get("eq") or {}
+        return isinstance(eq.get("kept"), bool) and eq.get("error") != EQ_NOT_INSTALLED
+
+    @property
     def awake(self) -> bool:
         return self.coordinator.awake

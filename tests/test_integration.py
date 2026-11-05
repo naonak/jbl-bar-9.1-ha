@@ -408,7 +408,13 @@ async def test_kept_eq_waiting_is_shown_and_can_be_reset(hass: HomeAssistant, re
     state = hass.states.get(preset)
     assert state.state == "clear_dialogue", "the chosen EQ, not Original, while it waits"
     assert state.attributes["kept"] is True and "re-applied" in state.attributes["error"]
-    assert hass.states.get(band).state == "unavailable"
+    # A remote that keeps the EQ saves a band changed while it cannot apply.
+    assert hass.states.get(band).state == "-3.0"
+    remote.log.clear()
+    await call(hass, "number", "set_value", band, value=-4)
+    assert remote.actions() == ["eq_apply"] and remote.eq_kept == [-4.0, -1.0, 0.0, 0.0, -1.0]
+    assert hass.states.get(preset).attributes["status"] == "waiting"
+    assert hass.states.get(band).state == "-4.0"
     remote.log.clear()
     await call(hass, "select", "select_option", preset, option="original")
     assert remote.actions() == ["eq_reset"]
@@ -424,3 +430,24 @@ async def test_kept_eq_waiting_at_startup(hass: HomeAssistant, remote) -> None:
     preset = "select.jbl_bar_9_1_front_eq_preset"
     assert hass.states.get(preset).state == "clear_dialogue"
     assert hass.states.get(preset).attributes["status"] == "waiting"
+
+
+async def test_eq_saved_in_standby(hass: HomeAssistant, remote) -> None:
+    """With a remote that keeps the EQ, a preset chosen in standby is saved for later."""
+    remote.keep_eq = True
+    remote.s["power"] = "Standby"
+    await setup(hass, remote)
+    preset = "select.jbl_bar_9_1_front_eq_preset"
+    assert hass.states.get(preset).state == "original"
+    await call(hass, "select", "select_option", preset, option="warm")
+    assert remote.eq_kept == [0, 0, -1, -2, -3]
+    assert hass.states.get(preset).state == "warm"
+    assert hass.states.get(preset).attributes["status"] == "waiting"
+
+
+async def test_eq_unavailable_in_standby_on_older_remote(hass: HomeAssistant, remote) -> None:
+    """An older remote (no eq.kept) refuses an EQ it cannot apply: the entities stay unavailable."""
+    remote.s["power"] = "Standby"
+    await setup(hass, remote)
+    assert hass.states.get("select.jbl_bar_9_1_front_eq_preset").state == "unavailable"
+    assert hass.states.get("number.jbl_bar_9_1_front_eq_125_hz").state == "unavailable"
