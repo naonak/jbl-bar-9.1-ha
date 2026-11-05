@@ -27,10 +27,10 @@ Then: *Settings → Devices & services → Add integration → JBL Bar Toolkit (
 | Media player | Power, volume (0–32 shown as 0–100 %), mute, source (TV, HDMI, Bluetooth), play/pause/next/previous/stop when the current source supports them, now playing (title, artist, album, app) |
 | Bass level | 1–5 |
 | Center level | 1–6 like the web page: 1 = original, up to +12 dB at 6 (the option values stay `0`–`5`, so automations are unchanged). Only when the remote includes the center-level control |
-| Bass offset | −3 to +3 dB in 0.5 dB steps on every native bass level, saved on the bar for startup (the toolkit's experimental bass offset); attributes `status`, `error`. Only when the remote includes it |
+| Bass offset | −3 to +3 dB in 0.5 dB steps on every native bass level, saved on the bar for startup (the toolkit's experimental bass offset); attributes `status`, `error` (for example `WAITING_FOR_FRONT_EQ`: paused while a Front EQ is applied). Only when the remote includes it |
 | Atmos height | Low, Mid, High |
 | Rear speakers | Low, Mid, High, Muted (rear speakers must be undocked) |
-| Front EQ preset | The remote's presets: Original, Less bass, Clear dialogue, Softer treble, Warm, Bright, Vocal focus |
+| Front EQ preset | The remote's presets: Original, Less bass, Clear dialogue, Softer treble, Warm, Bright, Vocal focus. Attributes `status`, `error` and, with a remote that keeps the EQ until Reset, `kept` |
 | Front EQ 125 Hz … 8 kHz | −6 to 0 dB per band; each change applies the full curve |
 | Night mode | Switch |
 | Smart mode | Switch: on = Smart, off = Standard (the bar returns to Smart at power-on). Needs a remote with the advanced controls |
@@ -53,7 +53,8 @@ Then: *Settings → Devices & services → Add integration → JBL Bar Toolkit (
 - **Same rules as the web page.** One control at a time. Levels that the bar can only cycle (bass, center, Atmos, rear, volume) are stepped one press at a time with read-back before the next. Switches and mute only send a toggle when the read-back state differs.
 - **One command after the other.** A command waits (up to 90 s) while another control runs on the bar, whoever sent it, and is sent once the bar is free; "Another control is running" is refused by the remote before it acts, so that one refusal is followed by a new attempt. In scripts each step already waits for the bar's confirmation; to wait for commands sent elsewhere, use `wait_template: "{{ is_state('binary_sensor.jbl_bar_9_1_command_running', 'off') }}"`.
 - **Refusals are shown, never retried.** If the remote refuses a control (for example a playback command the source does not support, rear levels while the speakers are docked, or another control already running), Home Assistant shows the remote's message. A stale security token after a remote restart is refreshed and the request is sent once more, because the remote rejects such requests before acting.
-- **Front EQ** follows the remote: cuts only, front left/right only, and it resets when the bar restarts.
+- **Front EQ** follows the remote: cuts only, front left/right only. With a remote that keeps the EQ until Reset, the preset keeps showing your choice while the bar waits to apply it again after a source change, Smart Mode or a restart (`status: waiting`, bands unavailable meanwhile); select *Original* to reset it. Older remotes reset it when the bar restarts.
+- **Bass offset and Front EQ** do not run together: the remote pauses the bass offset while a Front EQ is applied.
 
 ## Troubleshooting
 

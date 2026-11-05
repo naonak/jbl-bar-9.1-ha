@@ -47,6 +47,8 @@ class FakeRemote:
         self.setup: dict[str, Any] | None = {"sub_pairing": False}
         self.rear_docked = False
         self.model: str | None = "bar91"  # None: remote without /api/features
+        self.keep_eq = False  # remote that keeps the Front EQ until Reset (eq.kept)
+        self.eq_kept: list | None = None
         self.bass_offset: float | None = 0.0  # None: remote without the bass offset extension
         self.remembered_mode: str | None = None  # set when smart_mode_memory is on
         self.streams = 0
@@ -95,6 +97,12 @@ class FakeRemote:
             eq["error"] = "Turn on the bar and start audio to adjust EQ"
         else:
             eq["available"], eq["status"] = True, "ready"
+        if self.keep_eq:
+            eq["kept"] = self.eq_kept is not None
+            if self.eq_kept is not None and not s["eq_on"]:
+                # Dropped by the bar (source change, Smart, wake): shown while it waits.
+                eq.update(gains_db=self.eq_kept, available=False, status="waiting",
+                          error="Your EQ is re-applied automatically when Standard audio plays.")
         return eq
 
     async def notify(self) -> None:
@@ -173,8 +181,12 @@ class FakeRemote:
         elif a == "input_hdmi": s["input"] = "HDMI"
         elif a == "input_tv": s["input"] = "TV / ARC"
         elif a == "input_bluetooth": s["input"] = "Bluetooth"
-        elif a == "eq_apply": s["eq"], s["eq_on"] = req["gains_db"], True
-        elif a == "eq_reset": s["eq"], s["eq_on"] = [0] * 5, False
+        elif a == "eq_apply":
+            s["eq"], s["eq_on"] = req["gains_db"], True
+            self.eq_kept = list(req["gains_db"])
+        elif a == "eq_reset":
+            s["eq"], s["eq_on"] = [0] * 5, False
+            self.eq_kept = None
         await self.notify()
         return web.json_response(self.state())
 

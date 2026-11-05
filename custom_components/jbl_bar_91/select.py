@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import EQ_PRESETS
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity, eq_installed
+from .entity import JblBarEntity, eq_chosen_curve, eq_installed
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -71,16 +71,30 @@ class JblBarEqPreset(JblBarEntity, SelectEntity):
     _attr_options = list(EQ_PRESETS)
 
     @property
+    def eq(self) -> dict[str, Any]:
+        return self.state_doc.get("eq") or {}
+
+    @property
     def available(self) -> bool:
-        return super().available and self.eq_ready
+        # A kept EQ waiting to be applied again can still be reset (Original),
+        # like the web page's Reset button.
+        return super().available and (self.eq_ready or bool(self.eq.get("kept")))
 
     @property
     def current_option(self) -> str | None:
-        eq = self.state_doc.get("eq") or {}
-        if not eq.get("enabled"):
+        gains = eq_chosen_curve(self.state_doc)
+        if gains is None:
             return "original"
-        gains = [float(g) for g in eq.get("gains_db") or []]
         return next((name for name, curve in EQ_PRESETS.items() if curve == gains), None)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """status: original, active, waiting (kept EQ applied again when Standard audio plays), reset_required…"""
+        eq = self.eq
+        attrs: dict[str, Any] = {key: eq[key] for key in ("status", "error") if eq.get(key)}
+        if "kept" in eq:
+            attrs["kept"] = bool(eq["kept"])
+        return attrs
 
     async def async_select_option(self, option: str) -> None:
         curve = EQ_PRESETS[option]

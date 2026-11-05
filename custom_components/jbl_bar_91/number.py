@@ -9,7 +9,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import DOMAIN, AV_SYNC_CHUNK, AV_SYNC_LEGACY_CHUNK, AV_SYNC_MAX, AV_SYNC_SOURCES, AV_SYNC_STEP, EQ_BANDS
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import BASS_OFFSET, JblBarEntity, advanced_controls, bass_offset_state, eq_installed
+from .entity import BASS_OFFSET, JblBarEntity, advanced_controls, bass_offset_state, eq_chosen_curve, eq_installed
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
@@ -25,11 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: 
 
 
 def current_curve(doc: dict) -> list[float]:
-    eq = doc.get("eq") or {}
-    gains = eq.get("gains_db") or []
-    if not eq.get("enabled") or len(gains) != len(EQ_BANDS):
-        return [0.0] * len(EQ_BANDS)
-    return [float(g) for g in gains]
+    return eq_chosen_curve(doc) or [0.0] * len(EQ_BANDS)
 
 
 class JblBarEqBand(JblBarEntity, NumberEntity):

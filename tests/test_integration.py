@@ -391,3 +391,36 @@ async def test_setup_refuses_another_model(hass: HomeAssistant, remote) -> None:
     assert not await hass.config_entries.async_setup(entry.entry_id)
     assert entry.state is config_entries.ConfigEntryState.SETUP_ERROR
     assert hass.states.get(MP) is None
+
+
+async def test_kept_eq_waiting_is_shown_and_can_be_reset(hass: HomeAssistant, remote) -> None:
+    """A remote that keeps the EQ reports it while the bar has dropped it."""
+    remote.keep_eq = True
+    await setup(hass, remote)
+    preset = "select.jbl_bar_9_1_front_eq_preset"
+    band = "number.jbl_bar_9_1_front_eq_125_hz"
+    await call(hass, "select", "select_option", preset, option="clear_dialogue")
+    assert hass.states.get(preset).attributes["kept"] is True
+    # The bar drops the EQ (e.g. input change); the remote waits to apply it again.
+    remote.s["eq"], remote.s["eq_on"] = [0] * 5, False
+    await remote.notify()
+    assert await until(lambda: hass.states.get(preset).attributes.get("status") == "waiting")
+    state = hass.states.get(preset)
+    assert state.state == "clear_dialogue", "the chosen EQ, not Original, while it waits"
+    assert state.attributes["kept"] is True and "re-applied" in state.attributes["error"]
+    assert hass.states.get(band).state == "unavailable"
+    remote.log.clear()
+    await call(hass, "select", "select_option", preset, option="original")
+    assert remote.actions() == ["eq_reset"]
+    assert hass.states.get(preset).state == "original"
+    assert hass.states.get(preset).attributes["kept"] is False
+
+
+async def test_kept_eq_waiting_at_startup(hass: HomeAssistant, remote) -> None:
+    remote.keep_eq = True
+    remote.eq_kept = [-3.0, -1.0, 0.0, 0.0, -1.0]
+    await setup(hass, remote)
+    remote.s["power"] = "On"
+    preset = "select.jbl_bar_9_1_front_eq_preset"
+    assert hass.states.get(preset).state == "clear_dialogue"
+    assert hass.states.get(preset).attributes["status"] == "waiting"

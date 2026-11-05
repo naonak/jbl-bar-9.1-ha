@@ -24,6 +24,22 @@ def eq_installed(doc: dict[str, Any] | None) -> bool:
     return isinstance(eq, dict) and eq.get("error") != EQ_NOT_INSTALLED
 
 
+def eq_chosen_curve(doc: dict[str, Any] | None) -> list[float] | None:
+    """The Front EQ curve the owner chose, or None for the original tuning.
+
+    An applied EQ reports enabled. A remote that keeps the EQ until Reset
+    also reports it while it waits to be applied again (kept, status
+    "waiting", e.g. after a source change), with enabled false.
+    """
+    eq = (doc or {}).get("eq") or {}
+    gains = eq.get("gains_db") or []
+    if len(gains) != 5:
+        return None
+    if eq.get("enabled") or (eq.get("kept") and eq.get("status") == "waiting"):
+        return [float(g) for g in gains]
+    return None
+
+
 def advanced_controls(doc: dict[str, Any] | None) -> bool:
     """True when the remote has the advanced controls (Smart Mode, audio sync).
 
