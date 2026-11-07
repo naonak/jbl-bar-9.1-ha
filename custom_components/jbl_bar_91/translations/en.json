@@ -146,6 +146,15 @@
           "standard": "Standard",
           "smart": "Smart"
         }
+      },
+      "front_eq_status": {
+        "name": "Front EQ status",
+        "state": {
+          "active": "Active",
+          "waiting": "Waiting",
+          "off": "Off",
+          "reset_needed": "Reset needed"
+        }
       }
     },
     "binary_sensor": {

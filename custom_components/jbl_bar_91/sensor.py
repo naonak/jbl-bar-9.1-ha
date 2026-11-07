@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import JblBarConfigEntry, JblBarCoordinator
-from .entity import JblBarEntity, setup_controls, smart_mode_memory
+from .entity import JblBarEntity, eq_installed, setup_controls, smart_mode_memory
 
 
 def _memory(doc: dict[str, Any]) -> float | None:
@@ -23,6 +23,31 @@ def _memory(doc: dict[str, Any]) -> float | None:
 @dataclass(frozen=True, kw_only=True)
 class Description(SensorEntityDescription):
     value: Callable[[dict[str, Any]], Any]
+    attributes: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+
+
+def _eq_status(doc: dict[str, Any]) -> str | None:
+    """Whether the Front EQ is heard now, waits to apply, or is off (like the web page's badge)."""
+    eq = doc.get("eq") or {}
+    if len(eq.get("gains_db") or []) != 5:
+        return None
+    if eq.get("status") == "reset_required":
+        return "reset_needed"
+    if eq.get("enabled"):
+        # Heard only once the remote confirms it (status "active"); in Smart Mode
+        # or on another route the applied EQ stays enabled but is not playing.
+        return "active" if eq.get("status") in ("active", None) else "waiting"
+    if eq.get("status") == "waiting":
+        return "waiting"
+    return "off"
+
+
+def _eq_attributes(doc: dict[str, Any]) -> dict[str, Any]:
+    eq = doc.get("eq") or {}
+    attrs: dict[str, Any] = {"gains_db": eq.get("gains_db")}
+    if eq.get("error"):
+        attrs["reason"] = eq["error"]
+    return attrs
 
 
 DIAG = EntityCategory.DIAGNOSTIC
@@ -64,9 +89,17 @@ MEMORY_SENSORS = [
 ]
 
 
+# Front EQ helper installed: is the EQ active, waiting to apply, or off?
+EQ_SENSORS = [
+    Description(key="front_eq_status", device_class=SensorDeviceClass.ENUM, options=["active", "waiting", "off", "reset_needed"],
+                icon="mdi:equalizer", value=_eq_status, attributes=_eq_attributes),
+]
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: JblBarConfigEntry, add: AddConfigEntryEntitiesCallback) -> None:
     descriptions = (SENSORS + (SETUP_SENSORS if setup_controls(entry.runtime_data.data) else [])
-                    + (MEMORY_SENSORS if smart_mode_memory(entry.runtime_data.data) else []))
+                    + (MEMORY_SENSORS if smart_mode_memory(entry.runtime_data.data) else [])
+                    + (EQ_SENSORS if eq_installed(entry.runtime_data.data) else []))
     add(JblBarSensor(entry.runtime_data, description) for description in descriptions)
 
 
@@ -80,3 +113,8 @@ class JblBarSensor(JblBarEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         return self.entity_description.value(self.state_doc)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        attributes = self.entity_description.attributes
+        return attributes(self.state_doc) if attributes else None

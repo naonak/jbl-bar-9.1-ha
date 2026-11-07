@@ -47,6 +47,7 @@ class FakeRemote:
         self.setup: dict[str, Any] | None = {"sub_pairing": False}
         self.rear_docked = False
         self.model: str | None = "bar91"  # None: remote without /api/features
+        self.eq_status_override: str | None = None  # e.g. "reset_required"
         self.keep_eq = False  # remote that keeps the Front EQ until Reset (eq.kept)
         self.eq_kept: list | None = None
         self.bass_offset: float | None = 0.0  # None: remote without the bass offset extension
@@ -96,13 +97,15 @@ class FakeRemote:
         elif s["power"] != "On":
             eq["error"] = "Turn on the bar and start audio to adjust EQ"
         else:
-            eq["available"], eq["status"] = True, "ready"
+            eq["available"], eq["status"] = True, ("active" if s["eq_on"] else "ready")  # like the Go server
         if self.keep_eq:
             eq["kept"] = self.eq_kept is not None
             if self.eq_kept is not None and not s["eq_on"]:
                 # Dropped by the bar (source change, Smart, wake): shown while it waits.
                 eq.update(gains_db=self.eq_kept, available=False, status="waiting",
                           error="Your EQ is re-applied automatically when Standard audio plays.")
+        if self.eq_status_override:
+            eq["status"] = self.eq_status_override
         return eq
 
     async def notify(self) -> None:

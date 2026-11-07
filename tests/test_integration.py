@@ -451,3 +451,42 @@ async def test_eq_unavailable_in_standby_on_older_remote(hass: HomeAssistant, re
     await setup(hass, remote)
     assert hass.states.get("select.jbl_bar_9_1_front_eq_preset").state == "unavailable"
     assert hass.states.get("number.jbl_bar_9_1_front_eq_125_hz").state == "unavailable"
+
+
+async def test_front_eq_status_sensor(hass: HomeAssistant, remote) -> None:
+    """Like the web page's badge: active, waiting (with the reason), off or reset_needed."""
+    remote.keep_eq = True
+    await setup(hass, remote)
+    status = "sensor.jbl_bar_9_1_front_eq_status"
+    assert hass.states.get(status).state == "off"
+    await call(hass, "select", "select_option", "select.jbl_bar_9_1_front_eq_preset", option="warm")
+    assert hass.states.get(status).state == "active"
+    assert hass.states.get(status).attributes["gains_db"] == [0, 0, -1, -2, -3]
+    remote.s["eq"], remote.s["eq_on"] = [0] * 5, False  # dropped by the bar: kept EQ waits
+    await remote.notify()
+    assert await until(lambda: hass.states.get(status).state == "waiting")
+    assert "Standard audio" in hass.states.get(status).attributes["reason"]
+    remote.eq_status_override = "reset_required"
+    await remote.notify()
+    assert await until(lambda: hass.states.get(status).state == "reset_needed")
+
+
+async def test_front_eq_status_waits_in_smart_mode(hass: HomeAssistant, remote) -> None:
+    """An applied EQ the remote cannot confirm (Smart Mode, another route) is not reported active."""
+    remote.keep_eq = True
+    await setup(hass, remote)
+    status = "sensor.jbl_bar_9_1_front_eq_status"
+    await call(hass, "select", "select_option", "select.jbl_bar_9_1_front_eq_preset", option="warm")
+    remote.s["eq_on"] = True
+    remote.eq_status_override = "active"
+    await remote.notify()
+    assert await until(lambda: hass.states.get(status).state == "active")
+    remote.eq_status_override = "unavailable"  # Smart Mode: still enabled, not confirmed
+    await remote.notify()
+    assert await until(lambda: hass.states.get(status).state == "waiting")
+
+
+async def test_no_front_eq_status_without_helper(hass: HomeAssistant, remote) -> None:
+    remote.eq_helper = False
+    await setup(hass, remote)
+    assert hass.states.get("sensor.jbl_bar_9_1_front_eq_status") is None

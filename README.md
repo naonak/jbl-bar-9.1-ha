@@ -31,6 +31,7 @@ Then: *Settings → Devices & services → Add integration → JBL Bar Toolkit (
 | Atmos height | Low, Mid, High |
 | Rear speakers | Low, Mid, High, Muted (rear speakers must be undocked) |
 | Front EQ preset | The remote's presets: Original, Less bass, Clear dialogue, Softer treble, Warm, Bright, Vocal focus. Attributes `status`, `error` and, with a remote that keeps the EQ until Reset, `kept` |
+| Front EQ status | Sensor, like the web page's badge: `active` (heard now), `waiting` (kept, applied when Standard audio plays; attribute `reason`), `off`, `reset_needed`; attribute `gains_db` |
 | Front EQ 125 Hz … 8 kHz | −6 to 0 dB per band; each change applies the full curve |
 | Night mode | Switch |
 | Smart mode | Switch: on = Smart, off = Standard (the bar returns to Smart at power-on). Needs a remote with the advanced controls |
